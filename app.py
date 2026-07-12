@@ -605,6 +605,57 @@ def handle_admin_reset_simulation():
         
     broadcast_admin_update()
 
+@socketio.on('admin_simulate_bots')
+def handle_admin_simulate_bots(data):
+    try:
+        n_bots = int(data.get('n_bots', 500))
+    except:
+        n_bots = 500
+
+    lambda_val = system_state['lambda_param']
+    limit_x = system_state['time_limit_x']
+    
+    ontime_count = 0
+    late_count = 0
+    
+    for i in range(n_bots):
+        bot_id = f"bot_{int(time.time()*1000)}_{i}"
+        time_x = generate_exponential_time(lambda_val)
+        
+        is_ontime = time_x <= limit_x
+        if is_ontime:
+            ontime_count += 1
+            final_status = 'phase3_ontime'
+        else:
+            late_count += 1
+            final_status = 'phase3_late'
+            
+        clients[bot_id] = {
+            'client_id': bot_id,
+            'socket_id': None,
+            'is_online': False,
+            'name': f"🤖 Bot {i+1}",
+            'product': None,
+            'product_name': '🍔 Bot Burger',
+            'status': final_status,
+            'time_x': time_x,
+            'start_time': None,
+            'is_frozen': False,
+            'will_have_incident': False,
+            'incident_trigger_time': None,
+            'freidora_start_time': None,
+            'delivered_time': time_x,
+            'is_bot': True
+        }
+        
+    broadcast_admin_update()
+    
+    emit('bot_simulation_result', {
+        'total': n_bots,
+        'ontime': ontime_count,
+        'late': late_count
+    })
+
 @socketio.on('admin_deliver_single')
 def handle_admin_deliver_single(data):
     sid = data.get('socket_id')

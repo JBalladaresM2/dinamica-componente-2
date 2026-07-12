@@ -315,6 +315,21 @@
                             </button>
                         </div>
 
+                        <!-- BOTS MASIVO -->
+                        <div class="sm:col-span-2 bg-indigo-950/30 p-4 rounded-xl border border-indigo-500/40 flex flex-col justify-between space-y-3">
+                            <div>
+                                <span class="text-[10px] font-black uppercase bg-indigo-500 text-slate-950 px-2 py-0.5 rounded block w-fit mb-1.5">Masivo</span>
+                                <h4 class="font-bold text-sm text-white">Simulación Rápida de Bots</h4>
+                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">Ejecuta N bots de forma instantánea usando el λ y x actuales para comprobar la ley de grandes números.</p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="number" id="inp-bot-count" value="500" min="1" class="w-24 text-center bg-slate-900 border border-indigo-500/50 rounded-xl py-2.5 text-indigo-100 font-mono font-bold text-sm focus:outline-none focus:border-indigo-400">
+                                <button onclick="simulateBots()" class="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 transition active:scale-95">
+                                    🤖 Simular Pedidos con Bots
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -539,6 +554,30 @@
         }
         function deliverSingle(sid) { socket.emit('admin_deliver_single', { socket_id: sid }); }
 
+        function simulateBots() {
+            const n = parseInt(document.getElementById('inp-bot-count').value) || 500;
+            socket.emit('admin_simulate_bots', { n_bots: n });
+        }
+
+        socket.on('bot_simulation_result', (data) => {
+            const ontimePct = ((data.ontime / data.total) * 100).toFixed(1);
+            const latePct = ((data.late / data.total) * 100).toFixed(1);
+            
+            const content = document.getElementById('bot-flash-content');
+            content.innerHTML = `
+                <div class="text-xl font-black text-white mb-4">🤖 RESULTADO DE SIMULACIÓN MASIVA (${data.total} BOTS):</div>
+                <div class="bg-emerald-950/50 border border-emerald-500/30 rounded-xl p-4 mb-3">
+                    <div class="text-emerald-400 font-black text-2xl">🟢 A Tiempo</div>
+                    <div class="text-emerald-300 text-lg font-bold">${data.ontime} bots (${ontimePct}%)</div>
+                </div>
+                <div class="bg-rose-950/50 border border-rose-500/30 rounded-xl p-4">
+                    <div class="text-rose-400 font-black text-2xl">🔴 Retrasados</div>
+                    <div class="text-rose-300 text-lg font-bold">${data.late} bots (${latePct}%)</div>
+                </div>
+            `;
+            document.getElementById('bot-flash-modal').classList.remove('hidden');
+        });
+
         socket.on('admin_notification', (data) => {
             const area = document.getElementById('notification-area');
             area.className = 'fixed bottom-6 right-6 z-50 max-w-md w-full p-4 rounded-xl shadow-2xl border transition-all duration-300 ' +
@@ -556,5 +595,15 @@
             return div.innerHTML;
         }
     </script>
+
+    <!-- MODAL RESULTADO BOTS -->
+    <div id="bot-flash-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="bg-slate-900 border-2 border-indigo-500 rounded-2xl p-8 max-w-md w-full shadow-2xl shadow-indigo-500/20 transform transition-all scale-100">
+            <div id="bot-flash-content" class="text-center space-y-4"></div>
+            <button onclick="document.getElementById('bot-flash-modal').classList.add('hidden')" class="w-full mt-6 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm border border-slate-700 transition active:scale-95">
+                Cerrar
+            </button>
+        </div>
+    </div>
 </body>
 </html>
