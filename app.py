@@ -607,10 +607,12 @@ def handle_admin_reset_simulation():
 
 @socketio.on('admin_simulate_bots')
 def handle_admin_simulate_bots(data):
-    try:
-        n_bots = int(data.get('n_bots', 500))
-    except:
-        n_bots = 500
+    n_bots = system_state['max_clients']
+
+    # Remove previous bots
+    for cid in list(clients.keys()):
+        if clients[cid].get('is_bot'):
+            del clients[cid]
 
     lambda_val = system_state['lambda_param']
     limit_x = system_state['time_limit_x']

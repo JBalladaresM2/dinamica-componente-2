@@ -283,12 +283,16 @@
                         </div>
 
                         <!-- NOTA DE AULA PARA DICTAR PARÁMETROS -->
-                        <div class="sm:col-span-2 bg-purple-950/30 p-4 rounded-xl border border-purple-500/40 text-xs text-purple-200/90 leading-relaxed flex items-start gap-3">
-                            <span class="text-2xl mt-0.5">📝</span>
-                            <div>
-                                <strong class="text-purple-300 uppercase block text-[11px] tracking-wider font-mono">Guía para el Aula: ¿Dónde dictar los parámetros?</strong>
-                                Justo después del <strong>Paso 1</strong> (cuando los alumnos ven "Orden en Cocina"), el Integrante 2 dicta en voz alta la tasa λ y el tiempo x para que ellos calculen F(x) en su hoja del reto. Al terminar de resolver, se presiona el <strong>Paso 2</strong> en esta pantalla.
-                            </div>
+                        <div class="sm:col-span-2 bg-purple-950/30 p-4 rounded-xl border border-purple-500/40 text-xs text-purple-200/90 leading-relaxed">
+                            <details class="group">
+                                <summary class="flex items-center cursor-pointer list-none gap-3 focus:outline-none outline-none">
+                                    <span class="text-2xl">📝</span>
+                                    <strong class="text-purple-300 uppercase block text-[11px] tracking-wider font-mono flex-1 hover:text-purple-200 transition">Guía para el Aula: ¿Dónde dictar los parámetros? (Clic para expandir)</strong>
+                                </summary>
+                                <div class="mt-3 pl-[3.25rem]">
+                                    Justo después del <strong>Paso 1</strong> (cuando los alumnos ven "Orden en Cocina"), el Integrante 2 dicta en voz alta la tasa λ y el tiempo x para que ellos calculen F(x) en su hoja del reto. Al terminar de resolver, se presiona el <strong>Paso 2</strong> en esta pantalla.
+                                </div>
+                            </details>
                         </div>
 
                         <!-- PASO 3 -->
@@ -320,14 +324,15 @@
                             <div>
                                 <span class="text-[10px] font-black uppercase bg-indigo-500 text-slate-950 px-2 py-0.5 rounded block w-fit mb-1.5">Masivo</span>
                                 <h4 class="font-bold text-sm text-white">Simulación Rápida de Bots</h4>
-                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">Ejecuta N bots de forma instantánea usando el λ y x actuales para comprobar la ley de grandes números.</p>
+                                <p class="text-xs text-gray-400 mt-1 leading-relaxed">Simula instantáneamente la misma cantidad de bots que la capacidad máxima del salón usando el λ y x actuales.</p>
                             </div>
                             <div class="flex items-center space-x-3">
-                                <input type="number" id="inp-bot-count" value="500" min="1" class="w-24 text-center bg-slate-900 border border-indigo-500/50 rounded-xl py-2.5 text-indigo-100 font-mono font-bold text-sm focus:outline-none focus:border-indigo-400">
-                                <button onclick="simulateBots()" class="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 transition active:scale-95">
+                                <button onclick="simulateBots()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 transition active:scale-95">
                                     🤖 Simular Pedidos con Bots
                                 </button>
                             </div>
+                            <!-- RESULTADOS BOTS -->
+                            <div id="inline-bot-results" class="hidden mt-4 bg-slate-900 border border-indigo-500/30 rounded-xl p-4"></div>
                         </div>
 
                     </div>
@@ -555,27 +560,28 @@
         function deliverSingle(sid) { socket.emit('admin_deliver_single', { socket_id: sid }); }
 
         function simulateBots() {
-            const n = parseInt(document.getElementById('inp-bot-count').value) || 500;
-            socket.emit('admin_simulate_bots', { n_bots: n });
+            socket.emit('admin_simulate_bots', {});
         }
 
         socket.on('bot_simulation_result', (data) => {
             const ontimePct = ((data.ontime / data.total) * 100).toFixed(1);
             const latePct = ((data.late / data.total) * 100).toFixed(1);
             
-            const content = document.getElementById('bot-flash-content');
-            content.innerHTML = `
-                <div class="text-xl font-black text-white mb-4">🤖 RESULTADO DE SIMULACIÓN MASIVA (${data.total} BOTS):</div>
-                <div class="bg-emerald-950/50 border border-emerald-500/30 rounded-xl p-4 mb-3">
-                    <div class="text-emerald-400 font-black text-2xl">🟢 A Tiempo</div>
-                    <div class="text-emerald-300 text-lg font-bold">${data.ontime} bots (${ontimePct}%)</div>
-                </div>
-                <div class="bg-rose-950/50 border border-rose-500/30 rounded-xl p-4">
-                    <div class="text-rose-400 font-black text-2xl">🔴 Retrasados</div>
-                    <div class="text-rose-300 text-lg font-bold">${data.late} bots (${latePct}%)</div>
+            const resultDiv = document.getElementById('inline-bot-results');
+            resultDiv.innerHTML = `
+                <div class="text-[11px] font-black text-white mb-3 tracking-wider uppercase">🤖 RESULTADO DE SIMULACIÓN MASIVA (${data.total} BOTS):</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-emerald-950/50 border border-emerald-500/30 rounded-xl p-3 text-center">
+                        <div class="text-emerald-400 font-black text-[11px] uppercase">🟢 A Tiempo</div>
+                        <div class="text-emerald-300 text-lg font-bold mt-0.5">${data.ontime} <span class="text-[10px] font-medium opacity-80">(${ontimePct}%)</span></div>
+                    </div>
+                    <div class="bg-rose-950/50 border border-rose-500/30 rounded-xl p-3 text-center">
+                        <div class="text-rose-400 font-black text-[11px] uppercase">🔴 Retrasados</div>
+                        <div class="text-rose-300 text-lg font-bold mt-0.5">${data.late} <span class="text-[10px] font-medium opacity-80">(${latePct}%)</span></div>
+                    </div>
                 </div>
             `;
-            document.getElementById('bot-flash-modal').classList.remove('hidden');
+            resultDiv.classList.remove('hidden');
         });
 
         socket.on('admin_notification', (data) => {
@@ -595,15 +601,5 @@
             return div.innerHTML;
         }
     </script>
-
-    <!-- MODAL RESULTADO BOTS -->
-    <div id="bot-flash-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div class="bg-slate-900 border-2 border-indigo-500 rounded-2xl p-8 max-w-md w-full shadow-2xl shadow-indigo-500/20 transform transition-all scale-100">
-            <div id="bot-flash-content" class="text-center space-y-4"></div>
-            <button onclick="document.getElementById('bot-flash-modal').classList.add('hidden')" class="w-full mt-6 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm border border-slate-700 transition active:scale-95">
-                Cerrar
-            </button>
-        </div>
-    </div>
 </body>
 </html>
