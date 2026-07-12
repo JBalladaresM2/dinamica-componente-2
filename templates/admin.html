@@ -71,10 +71,10 @@
     <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 mt-6">
         <div id="notification-area" class="hidden"></div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
             
-            <!-- COLUMNA IZQUIERDA (5/12): RELOJ, RESPUESTA TEÓRICA Y PARÁMETROS AGRUPADOS -->
-            <div class="lg:col-span-5 space-y-6">
+            <!-- COLUMNA IZQUIERDA -->
+            <div class="space-y-6">
                 
                 <!-- RELOJ EN VIVO SINCRONIZADO CON EL SERVIDOR -->
                 <div class="bg-slate-900 rounded-2xl p-5 border border-emerald-500/40 shadow-xl flex items-center justify-between">
@@ -241,8 +241,8 @@
 
             </div>
 
-            <!-- COLUMNA DERECHA (7/12): GUIÓN SIMPLIFICADO & TABLA CON TIEMPO REAL DE ENTREGA -->
-            <div class="lg:col-span-7 space-y-6">
+            <!-- COLUMNA DERECHA -->
+            <div class="space-y-6 flex flex-col h-full">
                 
                 <!-- ACCIONES SIMPLIFICADAS DEL GUIÓN -->
                 <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-5">
@@ -331,15 +331,40 @@
                                     🤖 Simular Pedidos con Bots
                                 </button>
                             </div>
-                            <!-- RESULTADOS BOTS -->
-                            <div id="inline-bot-results" class="hidden mt-4 bg-slate-900 border border-indigo-500/30 rounded-xl p-4"></div>
                         </div>
 
                     </div>
                 </div>
 
-                <!-- TABLA DE SUPERVISIÓN EN VIVO CON TIEMPO REAL DE ENTREGA -->
-                <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+                <!-- RESULTADOS REALES (HUMANOS Y BOTS) -->
+                <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl mt-auto">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+                        <h2 class="text-sm font-black text-white uppercase tracking-wider">
+                            🏁 Resultados Reales
+                        </h2>
+                        <span class="text-xs text-gray-400 font-bold bg-slate-800 px-2 py-1 rounded">Total Entregas: <span id="real-total-count" class="text-white">0</span></span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-emerald-950/50 border border-emerald-500/30 rounded-xl p-4 text-center">
+                            <div class="text-emerald-400 font-black text-xs uppercase tracking-widest">🟢 A Tiempo</div>
+                            <div class="text-emerald-300 text-3xl font-black mt-2" id="real-ontime-count">0</div>
+                            <div class="text-emerald-400/70 text-[11px] font-bold mt-1" id="real-ontime-pct">0%</div>
+                        </div>
+                        <div class="bg-rose-950/50 border border-rose-500/30 rounded-xl p-4 text-center">
+                            <div class="text-rose-400 font-black text-xs uppercase tracking-widest">🔴 Retrasados</div>
+                            <div class="text-rose-300 text-3xl font-black mt-2" id="real-late-count">0</div>
+                            <div class="text-rose-400/70 text-[11px] font-bold mt-1" id="real-late-pct">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- TABLA DE SUPERVISIÓN EN VIVO (FULL WIDTH) -->
+        <div class="mt-6 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
                     <div class="p-4 border-b border-slate-800 flex items-center justify-between">
                         <h3 class="text-sm font-bold text-white flex items-center gap-2">
                             <span>👥 Supervisión en Vivo y Registro de Tiempos</span>
@@ -368,10 +393,6 @@
                         </table>
                     </div>
                 </div>
-
-            </div>
-
-        </div>
 
     </main>
 
@@ -455,6 +476,23 @@
             }
 
             renderStudentsTable(data.clients);
+            
+            // Compute and update Real Results
+            let ontimeCount = 0;
+            let lateCount = 0;
+            data.clients.forEach(c => {
+                if (c.status === 'phase3_ontime' || (c.status === 'success_final' && !c.is_late)) {
+                    ontimeCount++;
+                } else if (c.status === 'phase3_late' || (c.status === 'success_final' && c.is_late)) {
+                    lateCount++;
+                }
+            });
+            const totalFinished = ontimeCount + lateCount;
+            document.getElementById('real-total-count').innerText = totalFinished;
+            document.getElementById('real-ontime-count').innerText = ontimeCount;
+            document.getElementById('real-late-count').innerText = lateCount;
+            document.getElementById('real-ontime-pct').innerText = totalFinished > 0 ? ((ontimeCount / totalFinished) * 100).toFixed(1) + '%' : '0%';
+            document.getElementById('real-late-pct').innerText = totalFinished > 0 ? ((lateCount / totalFinished) * 100).toFixed(1) + '%' : '0%';
         });
 
         // BUCLE LOCAL SUAVE SINCRONIZADO CON EL SERVIDOR
@@ -562,27 +600,6 @@
         function simulateBots() {
             socket.emit('admin_simulate_bots', {});
         }
-
-        socket.on('bot_simulation_result', (data) => {
-            const ontimePct = ((data.ontime / data.total) * 100).toFixed(1);
-            const latePct = ((data.late / data.total) * 100).toFixed(1);
-            
-            const resultDiv = document.getElementById('inline-bot-results');
-            resultDiv.innerHTML = `
-                <div class="text-[11px] font-black text-white mb-3 tracking-wider uppercase">🤖 RESULTADO DE SIMULACIÓN MASIVA (${data.total} BOTS):</div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-emerald-950/50 border border-emerald-500/30 rounded-xl p-3 text-center">
-                        <div class="text-emerald-400 font-black text-[11px] uppercase">🟢 A Tiempo</div>
-                        <div class="text-emerald-300 text-lg font-bold mt-0.5">${data.ontime} <span class="text-[10px] font-medium opacity-80">(${ontimePct}%)</span></div>
-                    </div>
-                    <div class="bg-rose-950/50 border border-rose-500/30 rounded-xl p-3 text-center">
-                        <div class="text-rose-400 font-black text-[11px] uppercase">🔴 Retrasados</div>
-                        <div class="text-rose-300 text-lg font-bold mt-0.5">${data.late} <span class="text-[10px] font-medium opacity-80">(${latePct}%)</span></div>
-                    </div>
-                </div>
-            `;
-            resultDiv.classList.remove('hidden');
-        });
 
         socket.on('admin_notification', (data) => {
             const area = document.getElementById('notification-area');

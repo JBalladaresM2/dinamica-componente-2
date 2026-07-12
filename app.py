@@ -444,9 +444,15 @@ def handle_admin_phase1_release_menu():
     system_state['current_phase'] = 1
     for cid, client in list(clients.items()):
         if client['status'] in ['lobby', 'menu']:
-            client['status'] = 'menu'
-            if client.get('socket_id'):
-                socketio.emit('state_change', {'state': 'menu'}, room=client['socket_id'], namespace='/')
+            if client.get('is_bot'):
+                client['product'] = 'bot_burger'
+                client['product_name'] = '🍔 Bot Burger'
+                client['status'] = 'kitchen_waiting'
+                client['time_x'] = generate_exponential_time(system_state['lambda_param'])
+            else:
+                client['status'] = 'menu'
+                if client.get('socket_id'):
+                    socketio.emit('state_change', {'state': 'menu'}, room=client['socket_id'], namespace='/')
     broadcast_admin_update()
 
 @socketio.on('client_select_product')
@@ -607,7 +613,8 @@ def handle_admin_reset_simulation():
 
 @socketio.on('admin_simulate_bots')
 def handle_admin_simulate_bots(data):
-    n_bots = system_state['max_clients']
+    current_human_count = len([c for c in clients.values() if not c.get('is_bot')])
+    bots_to_add = max(0, system_state['max_clients'] - current_human_count)
 
     # Remove previous bots
     for cid in list(clients.keys()):
@@ -615,22 +622,18 @@ def handle_admin_simulate_bots(data):
             del clients[cid]
 
     lambda_val = system_state['lambda_param']
-    limit_x = system_state['time_limit_x']
     
-    ontime_count = 0
-    late_count = 0
-    
-    for i in range(n_bots):
+    for i in range(bots_to_add):
         bot_id = f"bot_{int(time.time()*1000)}_{i}"
-        time_x = generate_exponential_time(lambda_val)
         
-        is_ontime = time_x <= limit_x
-        if is_ontime:
-            ontime_count += 1
-            final_status = 'phase3_ontime'
-        else:
-            late_count += 1
-            final_status = 'phase3_late'
+        status = 'lobby'
+        prod_name = None
+        time_x = 0.0
+        
+        if system_state['lobby_open']:
+            status = 'kitchen_waiting'
+            prod_name = '🍔 Bot Burger'
+            time_x = generate_exponential_time(lambda_val)
             
         clients[bot_id] = {
             'client_id': bot_id,
@@ -638,25 +641,21 @@ def handle_admin_simulate_bots(data):
             'is_online': False,
             'name': f"🤖 Bot {i+1}",
             'product': None,
-            'product_name': '🍔 Bot Burger',
-            'status': final_status,
+            'product_name': prod_name,
+            'status': status,
             'time_x': time_x,
             'start_time': None,
             'is_frozen': False,
             'will_have_incident': False,
             'incident_trigger_time': None,
             'freidora_start_time': None,
-            'delivered_time': time_x,
+            'delivered_time': None,
             'is_bot': True
         }
         
     broadcast_admin_update()
     
-    emit('bot_simulation_result', {
-        'total': n_bots,
-        'ontime': ontime_count,
-        'late': late_count
-    })
+
 
 @socketio.on('admin_deliver_single')
 def handle_admin_deliver_single(data):
