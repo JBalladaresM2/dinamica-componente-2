@@ -611,6 +611,13 @@ def handle_admin_reset_simulation():
         
     broadcast_admin_update()
 
+@socketio.on('admin_clear_bots')
+def handle_admin_clear_bots(data):
+    for cid in list(clients.keys()):
+        if clients[cid].get('is_bot'):
+            del clients[cid]
+    broadcast_admin_update()
+
 @socketio.on('admin_simulate_bots')
 def handle_admin_simulate_bots(data):
     current_human_count = len([c for c in clients.values() if not c.get('is_bot')])

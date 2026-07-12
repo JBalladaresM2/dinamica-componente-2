@@ -328,7 +328,10 @@
                             </div>
                             <div class="flex items-center space-x-3">
                                 <button onclick="simulateBots()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 transition active:scale-95">
-                                    🤖 Simular Pedidos con Bots
+                                    🤖 Simular
+                                </button>
+                                <button onclick="clearBots()" class="py-2.5 px-4 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/30 text-rose-400 font-extrabold text-xs transition active:scale-95 whitespace-nowrap" title="Eliminar todos los bots">
+                                    🗑️ Limpiar
                                 </button>
                             </div>
                         </div>
@@ -595,10 +598,14 @@
         function resetSimulation() {
             if (confirm('¿Reiniciar toda la dinámica en el aula?')) socket.emit('admin_reset_simulation');
         }
-        function deliverSingle(sid) { socket.emit('admin_deliver_single', { socket_id: sid }); }
-
         function simulateBots() {
             socket.emit('admin_simulate_bots', {});
+        }
+
+        function clearBots() {
+            if (confirm('¿Limpiar todos los bots?')) {
+                socket.emit('admin_clear_bots', {});
+            }
         }
 
         socket.on('admin_notification', (data) => {
