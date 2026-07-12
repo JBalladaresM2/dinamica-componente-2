@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Simulator | Distribución Exponencial - Dinámica Universitaria</title>
+    <!-- Tailwind CSS desde CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                        accent: '#f43f5e',
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 10% 20%, rgb(15, 23, 42) 0%, rgb(17, 24, 39) 90%);
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen text-gray-100 flex flex-col justify-between p-4 md:p-8">
+
+    <!-- Header / Navbar -->
+    <header class="max-w-6xl mx-auto w-full flex items-center justify-between py-4 border-b border-gray-800">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl">🍔⚡</span>
+            <div>
+                <h1 class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-rose-400">
+                    Delivery Simulator
+                </h1>
+                <p class="text-xs text-gray-400">Dinámica Universitaria • Probabilidad & Estadística</p>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center space-x-2 text-xs bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700 text-blue-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Estocástica Aplicada & Teorema de Falta de Memoria</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto w-full my-auto py-8">
+        <div class="text-center max-w-3xl mx-auto mb-12">
+            <span class="inline-block py-1 px-3.5 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-4 border border-indigo-500/20">
+                Simulador Interactivo en Tiempo Real
+            </span>
+            <h2 class="text-4xl sm:text-5xl font-black tracking-tight mb-4 leading-tight">
+                Experimenta la <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">Distribución Exponencial</span> en tu Móvil
+            </h2>
+            <p class="text-gray-400 text-base sm:text-lg">
+                Una demostración en vivo de pedidos de comida a domicilio (<strong class="text-white">Déjenos de Semestre Eats</strong>) para ilustrar la transformación inversa y la pérdida de memoria en procesos aleatorios de Poisson.
+            </p>
+        </div>
+
+        <!-- Tarjetas de Acceso Principal (2 Vías) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <!-- Tarjeta 1: Acceso Estudiantes -->
+            <div class="glass-panel rounded-2xl p-6 sm:p-8 flex flex-col justify-between hover:border-blue-500/50 transition-all duration-300 group shadow-xl">
+                <div>
+                    <div class="w-14 h-14 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">
+                        📱
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Acceso Estudiantes</h3>
+                    <p class="text-gray-400 text-sm mb-6 leading-relaxed">
+                        Conéctate al aula virtual desde tu teléfono inteligente. Ingresa tu nombre, espera la liberación en el Lobby, elige tu comida favorita en el menú móvil y observa en vivo la generación exponencial de tu tiempo de entrega.
+                    </p>
+                    <div class="flex items-center space-x-2 text-xs text-amber-400/90 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20 mb-6">
+                        <span>⚠️</span>
+                        <span>Límite de muestra estrictamente controlado: <strong>Máximo 25 alumnos concurrentes</strong>.</span>
+                    </div>
+                </div>
+                <a href="/client" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-center shadow-lg shadow-blue-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center space-x-2">
+                    <span>Entrar a la Sala como Alumno</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </a>
+            </div>
+
+            <!-- Tarjeta 2: Acceso Expositor / Docente -->
+            <div class="glass-panel rounded-2xl p-6 sm:p-8 flex flex-col justify-between hover:border-rose-500/50 transition-all duration-300 group shadow-xl">
+                <div>
+                    <div class="w-14 h-14 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-3xl mb-6 group-hover:scale-110 transition-transform">
+                        🛠️
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">Panel del Grupo Expositor</h3>
+                    <p class="text-gray-400 text-sm mb-6 leading-relaxed">
+                        Centro de mando maestro del equipo expositor y docente. Controla la liberación del Lobby, ajusta en tiempo real la tasa estadística <strong class="text-rose-400">λ (Lambda)</strong>, y dispara el experimento de congelamiento aleatorio para demostrar la pérdida de memoria.
+                    </p>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-400 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 mb-6 font-mono">
+                        <div>PDF: <span class="text-emerald-400">f(x) = λe⁻λˣ</span></div>
+                        <div>CDF: <span class="text-emerald-400">F(x) = 1 - e⁻λˣ</span></div>
+                    </div>
+                </div>
+                <a href="/admin" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 hover:from-rose-500 hover:to-purple-500 text-white font-bold text-center shadow-lg shadow-rose-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center space-x-2">
+                    <span>Abrir Panel de Control (Admin)</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Resumen Matemático Didáctico -->
+        <div class="mt-12 glass-panel rounded-2xl p-6 border border-slate-800 max-w-4xl mx-auto">
+            <h4 class="text-sm font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                <span>📐</span> Fundamento Estadístico Implementado en el Sistema
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-gray-300">
+                <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                    <span class="text-blue-400 font-semibold block mb-1">Transformada Inversa</span>
+                    Fórmula algebraica exacta: <br>
+                    <code class="text-emerald-300 font-mono text-sm block mt-1">x = -ln(1 - u) / λ</code>
+                    donde <code class="text-gray-400">u ∈ [0,1)</code> es uniforme.
+                </div>
+                <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                    <span class="text-purple-400 font-semibold block mb-1">Propiedad Falta de Memoria</span>
+                    El tiempo ya transcurrido no altera la probabilidad futura: <br>
+                    <code class="text-emerald-300 font-mono text-sm block mt-1">P(X > s+t | X > s) = P(X > t)</code>
+                </div>
+                <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                    <span class="text-rose-400 font-semibold block mb-1">Parámetros Estadísticos</span>
+                    Esperanza y Varianza en función de la tasa de llegada <code class="text-rose-300">λ</code>:<br>
+                    <code class="text-emerald-300 font-mono text-sm block mt-1">E[X] = 1/λ  |  Var[X] = 1/λ²</code>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-6xl mx-auto w-full text-center py-6 text-xs text-gray-500 border-t border-gray-800/80">
+        <p>© 2026 Delivery Simulator • Dinámica de Probabilidad & Estadística • Universidad</p>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Déjenos de Semestre Eats</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                        accent: '#f43f5e',
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .card-enter {
+            animation: cardEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes cardEnter {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <div class="max-w-md mx-auto w-full min-h-screen flex flex-col justify-between bg-slate-900 border-x border-slate-800 shadow-2xl relative overflow-hidden transition-colors duration-500" id="main-container">
+
+        <!-- Barra Superior Limpia (Eslogan de delivery real, sin leyenda estudiantil ni estados) -->
+        <header class="px-6 py-4 flex items-center justify-between border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">🍔</span>
+                <div>
+                    <h1 class="text-base font-black tracking-tight text-white leading-none">
+                        Déjenos de Semestre Eats
+                    </h1>
+                    <span class="text-[11px] text-gray-400 font-semibold block mt-1">Tu comida favorita en minutos</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- CONTENIDO INTERACTIVO LIMPIO (TIPO RAPPI / UBER EATS) -->
+        <main class="flex-1 flex flex-col justify-center p-6 relative z-10" id="screens-container">
+
+            <!-- ================================================================= -->
+            <!-- LOGIN INICIAL -->
+            <!-- ================================================================= -->
+            <div id="screen-login" class="flex flex-col items-center justify-center text-center space-y-6 my-auto">
+                <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-4xl shadow-xl shadow-blue-500/25 animate-bounce">
+                    🛵
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-white">¡Pide tu Comida Favorita!</h2>
+                    <p class="text-xs text-gray-400 mt-2 max-w-xs mx-auto leading-relaxed">
+                        Ingresa tu nombre para comenzar tu pedido en el restaurante.
+                    </p>
+                </div>
+                
+                <form id="login-form" class="w-full space-y-4 max-w-xs">
+                    <div>
+                        <label class="block text-left text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">Tu Nombre o Apodo:</label>
+                        <input type="text" id="student-name-input" required placeholder="Ej: Carlos Hernández" maxlength="30"
+                               class="w-full px-4 py-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-medium text-sm transition">
+                    </div>
+                    <button type="submit" id="btn-login"
+                            class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-extrabold text-sm shadow-lg transition active:scale-95">
+                        <span>Entrar a la App</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- SALA LLENA (LÍMITE EXCEDIDO) -->
+            <!-- ================================================================= -->
+            <div id="screen-room-full" class="hidden flex flex-col items-center justify-center text-center space-y-6 my-auto p-5 bg-rose-950/40 rounded-3xl border border-rose-500/40">
+                <div class="w-20 h-20 rounded-full bg-rose-500/20 border-2 border-rose-500 flex items-center justify-center text-4xl animate-pulse">🚫</div>
+                <div>
+                    <span class="inline-block px-3 py-1 rounded-full bg-rose-500 text-white font-black text-xs uppercase mb-2">Saturado</span>
+                    <h2 class="text-2xl font-black text-rose-300">Restaurantes Saturados</h2>
+                    <p class="text-xs text-rose-200/80 mt-3 max-w-xs mx-auto">Capacidad máxima alcanzada en el sistema en este momento.</p>
+                </div>
+                <button onclick="window.location.reload()" class="w-full max-w-xs py-3.5 px-6 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm shadow-lg transition">🔄 Reintentar Conexión</button>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- LOBBY ("Por favor, espere... Conectando con el menú...") -->
+            <!-- ================================================================= -->
+            <div id="screen-lobby" class="hidden flex flex-col items-center justify-center text-center space-y-6 my-auto">
+                <div class="w-24 h-24 rounded-full bg-blue-500/20 border-2 border-blue-500 flex items-center justify-center text-5xl animate-pulse">🍽️</div>
+                <div>
+                    <h2 class="text-2xl font-black text-white">Por favor, espere...</h2>
+                    <p class="text-xs text-blue-300 font-medium mt-1">Conectando con el menú disponible...</p>
+                </div>
+                <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 max-w-xs w-full space-y-2 shadow-lg text-left">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl animate-spin">⏳</span>
+                        <div>
+                            <h4 class="font-bold text-xs text-white">Restaurante Abriendo...</h4>
+                            <p class="text-[11px] text-gray-400">Pronto podrás elegir tu especialidad en línea.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- MENÚ DE COMIDAS & ELECCIÓN -->
+            <!-- ================================================================= -->
+            <div id="screen-menu" class="hidden flex flex-col justify-between my-auto space-y-4">
+                <div class="text-center">
+                    <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 font-bold text-[11px] uppercase border border-blue-500/30">
+                        🍕 Especialidades
+                    </span>
+                    <h2 class="text-lg font-black text-white mt-1.5">¿Qué pedirás hoy, <span id="menu-student-name" class="text-blue-400">Usuario</span>?</h2>
+                </div>
+
+                <div class="relative max-w-xs mx-auto w-full my-2">
+                    <div id="product-card-display" class="card-enter bg-slate-800/95 rounded-3xl p-6 border border-slate-700 flex flex-col justify-between shadow-2xl min-h-[330px]"></div>
+                </div>
+
+                <div class="max-w-xs mx-auto w-full space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <button onclick="changeProduct(-1)" class="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-gray-200 font-bold text-xs border border-slate-700 transition">◀ Anterior</button>
+                        <button onclick="changeProduct(1)" class="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-gray-200 font-bold text-xs border border-slate-700 transition">Siguiente ▶</button>
+                    </div>
+                    <div class="flex items-center justify-center space-x-2 py-1" id="carousel-dots">
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 cursor-pointer" onclick="goToProduct(0)"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700 cursor-pointer" onclick="goToProduct(1)"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700 cursor-pointer" onclick="goToProduct(2)"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700 cursor-pointer" onclick="goToProduct(3)"></span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700 cursor-pointer" onclick="goToProduct(4)"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- ESPERANDO EN COCINA ("Preparando tu orden en cocina...") -->
+            <!-- ================================================================= -->
+            <div id="screen-kitchen-waiting" class="hidden flex flex-col items-center justify-center text-center space-y-6 my-auto">
+                <div class="w-24 h-24 rounded-full bg-white/10 border-4 border-white/80 flex items-center justify-center text-5xl animate-bounce shadow-2xl">
+                    👨‍🍳
+                </div>
+                <div>
+                    <span class="px-3.5 py-1 rounded-full bg-blue-500/20 text-blue-400 font-black text-xs uppercase tracking-widest border border-blue-500/30">
+                        Orden en Cocina
+                    </span>
+                    <h2 class="text-2xl font-black text-white mt-3" id="kitchen-product-name">🍔 La Semestre-Killer</h2>
+                    <p class="text-xs text-gray-300 font-semibold mt-1.5">Preparando tu orden con esmero...</p>
+                </div>
+
+                <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 max-w-xs w-full space-y-3 shadow-2xl text-left">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-3xl animate-pulse">🍳</span>
+                        <div>
+                            <h4 class="font-bold text-xs text-white">Sartén Caliente</h4>
+                            <p class="text-[11px] text-gray-400">Tu pedido está en fila de preparación rápida.</p>
+                        </div>
+                    </div>
+                    <div class="pt-3 border-t border-slate-700 text-center text-[11px] text-blue-300 font-medium">
+                        ⏳ En breves instantes saldrá en ruta hacia ti...
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- EN RUTA DE ENTREGA (REDISEÑO SIMÉTRICO CON ICONO BRINCANDO AL CENTRO) -->
+            <!-- ================================================================= -->
+            <div id="screen-simulation-running" class="hidden flex flex-col justify-between items-center max-w-xs mx-auto w-full my-auto py-2 space-y-6">
+                <!-- Píldora Superior Simétrica -->
+                <div class="w-full text-center">
+                    <span class="px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-black text-xs uppercase tracking-widest inline-block shadow-lg animate-pulse">
+                        🛵 Repartidor en Ruta
+                    </span>
+                </div>
+
+                <!-- Bloque Central Simétrico (Icono Brincando Centrado) -->
+                <div class="flex flex-col items-center space-y-4 my-auto">
+                    <div class="w-28 h-28 rounded-3xl bg-slate-800/90 border-2 border-emerald-500/60 flex items-center justify-center text-6xl shadow-2xl shadow-emerald-500/10 animate-bounce">
+                        🛵
+                    </div>
+                    <div class="text-center px-2">
+                        <h2 class="text-lg font-black text-white leading-tight" id="running-product-name">🍕 La Integral</h2>
+                        <p class="text-[11px] text-emerald-300/80 font-medium mt-1.5">Tu repartidor avanza en tiempo real hacia tu ubicación...</p>
+                    </div>
+                </div>
+
+                <!-- Tarjeta Inferior de Cronómetro Simétrica -->
+                <div class="bg-slate-950/95 p-5 rounded-2xl border-2 border-emerald-500/80 w-full text-center shadow-2xl space-y-1">
+                    <span class="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 block">Tiempo Transcurrido de Viaje</span>
+                    <div id="live-stopwatch-display" class="text-4xl font-black text-emerald-400 font-mono tracking-wider py-1">
+                        00:00.0s
+                    </div>
+                    <span class="text-[10px] text-emerald-400/80 font-semibold block">⚡ Monitoreo GPS en vivo</span>
+                </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- RESULTADO: ENTREGA COMPLETADA A TIEMPO (🟢 VERDE) -->
+            <!-- ================================================================= -->
+            <div id="screen-phase3-ontime" class="hidden flex flex-col items-center justify-center text-center space-y-5 my-auto py-2">
+                <div class="w-20 h-20 rounded-full bg-white/20 border-4 border-white flex items-center justify-center text-5xl shadow-2xl animate-bounce">
+                    🎉
+                </div>
+                <div>
+                    <span class="px-3.5 py-1 rounded-full bg-white text-emerald-800 font-black text-[11px] uppercase tracking-widest shadow">
+                        🟢 ¡Pedido Entregado a Tiempo!
+                    </span>
+                    <h2 class="text-2xl font-black text-white mt-2 leading-tight" id="ontime-title-text">¡Tu 🍔 La Semestre-Killer ha llegado! 🎉</h2>
+                </div>
+
+                <div class="bg-black/30 backdrop-blur-md p-5 rounded-2xl border border-white/20 max-w-xs w-full space-y-3 text-left shadow-2xl">
+                    <div class="flex justify-between items-center pb-2 border-b border-white/15">
+                        <span class="text-xs font-black uppercase text-emerald-300">🧾 Ticket de Delivery</span>
+                        <span class="font-mono text-xs font-bold text-white" id="ontime-student">Carlos H.</span>
+                    </div>
+                    <div class="space-y-2 text-xs text-emerald-100 pt-1 font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Tiempo del Repartidor:</span>
+                            <span id="ontime-time-x" class="font-bold text-amber-300">12.4 s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Estado de Entrega:</span>
+                            <span class="font-bold text-white">⚡ Rápida</span>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-white/15 text-center text-[11px] text-emerald-200 font-sans font-bold">
+                        ¡Buen provecho! Tu pedido llegó en excelente tiempo.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- RESULTADO: ENTREGA RETRASADA (🔴 NARANJA / ROJO) -->
+            <!-- ================================================================= -->
+            <div id="screen-phase3-late" class="hidden flex flex-col items-center justify-center text-center space-y-5 my-auto py-2">
+                <div class="w-20 h-20 rounded-full bg-white/20 border-4 border-white flex items-center justify-center text-5xl shadow-2xl">
+                    🛵💨
+                </div>
+                <div>
+                    <span class="px-3.5 py-1 rounded-full bg-white text-rose-800 font-black text-[11px] uppercase tracking-widest shadow">
+                        🔴 Pedido con Retraso
+                    </span>
+                    <h2 class="text-2xl font-black text-white mt-2 leading-tight" id="late-title-text">Tu 🍕 La Integral tardó un poco más 🛵💨</h2>
+                </div>
+
+                <div class="bg-black/30 backdrop-blur-md p-5 rounded-2xl border border-white/20 max-w-xs w-full space-y-3 text-left shadow-2xl">
+                    <div class="flex justify-between items-center pb-2 border-b border-white/15">
+                        <span class="text-xs font-black uppercase text-rose-300">🧾 Ticket de Delivery</span>
+                        <span class="font-mono text-xs font-bold text-white" id="late-student">Carlos H.</span>
+                    </div>
+                    <div class="space-y-2 text-xs text-rose-100 pt-1 font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Tiempo del Repartidor:</span>
+                            <span id="late-time-x" class="font-bold text-amber-300">28.5 s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Estado de Entrega:</span>
+                            <span class="font-bold text-white">Demorada</span>
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-white/15 text-center text-[11px] text-rose-200 font-sans font-bold">
+                        Tu repartidor tuvo que tomar una distancia un poco mayor en la ruta.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- INCIDENCIA EN TRÁFICO / RUTA (SIN VUELTAS / NO ANIMATE-SPIN) -->
+            <!-- ================================================================= -->
+            <div id="screen-phase4-freidora" class="hidden flex flex-col items-center justify-center text-center space-y-5 my-auto">
+                <div class="relative">
+                    <div id="freidora-icon-emoji" class="w-24 h-24 rounded-full bg-rose-950/90 border-4 border-rose-500 flex items-center justify-center text-5xl shadow-2xl animate-pulse">
+                        🚧
+                    </div>
+                    <span id="freidora-badge-text" class="absolute -bottom-2 -right-2 bg-rose-600 text-white font-black text-[10px] px-2.5 py-1 rounded-full border-2 border-slate-900 uppercase">
+                        TRÁFICO
+                    </span>
+                </div>
+
+                <div>
+                    <span id="freidora-alert-title" class="px-3.5 py-1 rounded-full bg-rose-600 text-white font-black text-xs uppercase tracking-widest shadow animate-pulse">
+                        ⚠️ Incidencia en la Ruta
+                    </span>
+                    <h2 class="text-xl font-black text-white mt-3" id="freidora-product-title">🍟 Papas Finitas (Estocástica Fries)</h2>
+                </div>
+
+                <div class="bg-slate-950/90 p-5 rounded-2xl border-2 border-rose-500 max-w-xs w-full space-y-3 shadow-2xl text-left">
+                    <p class="text-xs text-amber-300 font-bold leading-relaxed">
+                        ⚠️ ¡Atención! Tu pedido <span id="freidora-item-name" class="underline">Papas Finitas</span> reporta una eventualidad:
+                    </p>
+                    <p id="freidora-alert-detail" class="text-[11px] text-gray-300 leading-normal">
+                        El sistema está monitoreando la vía e intentando un desvío alternativo lo antes posible...
+                    </p>
+                    <div class="pt-3 border-t border-slate-800 flex justify-between items-center font-mono">
+                        <span class="text-[10px] text-gray-400 font-sans font-bold">Tiempo demorado:</span>
+                        <span id="freidora-clock" class="text-sm font-black text-rose-400">00:00 s...</span>
+                    </div>
+                </div>
+
+                <div class="text-[11px] text-gray-400 font-medium max-w-xs leading-relaxed bg-slate-800/60 p-3.5 rounded-xl border border-slate-700">
+                    💡 Mantén abierta esta pantalla. Te avisaremos apenas el repartidor logre continuar el camino.
+                </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- LIBERACIÓN DE TRÁFICO (ENTREGA RESUELTA) -->
+            <!-- ================================================================= -->
+            <div id="screen-freidora-solved" class="hidden flex flex-col items-center justify-center text-center space-y-5 my-auto py-2">
+                <div id="solved-icon-emoji" class="w-20 h-20 rounded-full bg-white/20 border-4 border-white flex items-center justify-center text-5xl shadow-2xl animate-bounce">
+                    🛵✨
+                </div>
+                <div>
+                    <span id="solved-badge" class="px-3.5 py-1 rounded-full bg-white text-teal-800 font-black text-[11px] uppercase tracking-widest shadow">
+                        ✅ ¡Tráfico Resuelto!
+                    </span>
+                    <h2 class="text-2xl font-black text-white mt-2 leading-tight" id="solved-title-text">Tu pedido ha superado el tráfico 🎉</h2>
+                </div>
+
+                <div class="bg-black/30 backdrop-blur-md p-5 rounded-2xl border border-white/20 max-w-xs w-full space-y-3 text-left shadow-2xl">
+                    <div class="flex justify-between items-center pb-2 border-b border-white/15">
+                        <span class="text-xs font-black uppercase text-teal-300">🧾 Ticket de Delivery</span>
+                        <span class="font-mono text-xs font-bold text-white" id="solved-student">Carlos H.</span>
+                    </div>
+                    <div class="space-y-2 text-xs text-teal-100 pt-1 font-mono">
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Tiempo Teórico (X):</span>
+                            <span id="solved-time-x" class="font-bold text-amber-300">14.2 s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Tiempo Real en Ruta:</span>
+                            <span id="solved-real-time" class="font-bold text-white">24.5 s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-300">Clasificación / Estado:</span>
+                            <span id="solved-status-badge" class="font-bold text-rose-300">🔴 Retrasado</span>
+                        </div>
+                    </div>
+                    <div id="solved-detail-text" class="pt-2 border-t border-white/15 text-center text-[11px] text-teal-200 font-sans font-bold">
+                        ¡Lamentamos el incidente vial! Tu entrega finalizó.
+                    </div>
+                </div>
+            <!-- ================================================================= -->
+            <!-- MODAL DE BROMA TÓXICA (DL50 EXCEDIDA + 1 mL) -->
+            <!-- ================================================================= -->
+            <div id="toxic-joke-modal" class="hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 text-center animate-fade-in">
+                <div class="bg-slate-900 border-4 border-emerald-500 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-[0_0_50px_rgba(16,185,129,0.6)] relative">
+                    <div class="w-20 h-20 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center text-5xl animate-bounce border-2 border-emerald-400">
+                        ☣️
+                    </div>
+                    <span class="px-3.5 py-1 rounded-full bg-emerald-500 text-black font-black text-[11px] uppercase tracking-widest block shadow">
+                        ¡ALERTA DE BIOSEGURIDAD DL50!
+                    </span>
+                    <h3 class="text-xl font-black text-white leading-tight">
+                        ¿Seguro que deseas pedir <span class="text-emerald-400">1 Litro + 1 mL de Mercurio Líquido</span>?
+                    </h3>
+                    <div class="text-xs text-gray-300 leading-relaxed text-left bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+                        <p>⚠️ <b class="text-emerald-400">Advertencia Toxicológica:</b> El cuerpo humano promedio de un estudiante de ingeniería tolera exactamente <b class="text-white">1.000 Litros de Mercurio</b> antes de colapsar en la semana de exámenes.</p>
+                        <p>Al pedir el menú <b class="text-rose-400">"Por si pierdo el semestre"</b> (con 1 mL letal extra de propina), estás aceptando firmar el <i>Descargo de Responsabilidad de Semestre Eats</i>, donde dejas tus apuntes y tu calculadora científica en herencia al compañero de la banca de atrás si no pasas el extraordinario. 💀🧪</p>
+                    </div>
+                    <div class="pt-2 flex flex-col space-y-2">
+                        <button onclick="confirmToxicOrder()" class="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-lg shadow-emerald-600/30 active:scale-95 transition flex items-center justify-center space-x-1">
+                            <span>☠️ ¡Acepto el Riesgo! (Pedir 1LT + 1 mL)</span>
+                        </button>
+                        <button onclick="closeToxicModal()" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-400 font-bold text-xs transition">
+                            <span>🛑 Mejor pido algo seguro (y estudio)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+    <script>
+        const socket = io();
+        const mainContainer = document.getElementById('main-container');
+
+        let studentName = '';
+        let simStopwatchTimer = null;
+        let simStartTime = null;
+        let freidoraTimer = null;
+        let freidoraStart = null;
+
+        let clientId = localStorage.getItem('mi_id_delivery');
+        if (!clientId) {
+            clientId = 'user_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('mi_id_delivery', clientId);
+        }
+
+        let savedName = localStorage.getItem('mi_nombre_delivery');
+
+        socket.on('connect', () => {
+            if (savedName && clientId) {
+                socket.emit('student_login', { name: savedName, client_id: clientId });
+            }
+        });
+
+        const menuProducts = [
+            { id: 'p1', emoji: '🍔', img: '/imgs/burguer.png', name: 'La Semestre-Killer', place: 'McMath', category: 'Hamburguesa con queso', badgeColor: 'text-blue-400', btnColor: 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30' },
+            { id: 'p2', emoji: '🍕', img: '/imgs/pizza.png', name: 'La Integral', place: 'Pizza Gauss', category: 'Pizza de pepperoni', badgeColor: 'text-purple-400', btnColor: 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30' },
+            { id: 'p3', emoji: '🍟', img: '/imgs/papas.png', name: 'Papas Finitas', place: 'Estocástica Fries', category: 'Papas fritas crujientes', badgeColor: 'text-amber-400', btnColor: 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30' },
+            { id: 'p4', emoji: '🌭', img: '/imgs/hotdog.png', name: 'El Perro Exponencial', place: 'Distribución HotDogs', category: 'Hot dog gourmet', badgeColor: 'text-rose-400', btnColor: 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30' },
+            { id: 'p5', emoji: '🧪', img: '/imgs/mercurio.png', name: 'Por si pierdo el semestre', place: 'Lab. de Toxicología (Sótano 3)', category: '1LT de Mercurio liquido', badgeColor: 'text-emerald-400 animate-pulse', btnColor: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30' }
+        ];
+
+        let activeIndex = 0;
+
+        function renderActiveProduct() {
+            const product = menuProducts[activeIndex];
+            const container = document.getElementById('product-card-display');
+            container.classList.remove('card-enter');
+            void container.offsetWidth;
+            container.classList.add('card-enter');
+
+            container.innerHTML = `
+                <div class="flex justify-center items-center my-2 h-44">
+                    <img src="${product.img}" alt="${product.name}" class="max-h-40 max-w-[160px] object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.7)] transition-transform duration-300 hover:scale-105">
+                </div>
+                <div class="text-center my-1">
+                    <span class="text-[10px] font-extrabold uppercase tracking-widest ${product.badgeColor} block">${product.category} • Lugar: ${product.place}</span>
+                    <h3 class="text-xl font-black text-white mt-1 leading-tight">${product.name}</h3>
+                </div>
+                <button onclick="selectProductCard('${product.id}', '${product.name}', '${product.emoji}', '${product.place}')"
+                        class="w-full mt-4 py-3.5 px-4 rounded-2xl ${product.btnColor} text-white font-extrabold text-sm transition shadow-lg flex items-center justify-center space-x-2 active:scale-95">
+                    <span>¡Pedir Ahora ${product.emoji}!</span>
+                </button>
+            `;
+
+            const dots = document.getElementById('carousel-dots').children;
+            for (let i = 0; i < dots.length; i++) {
+                dots[i].className = (i === activeIndex) 
+                    ? 'w-4 h-2.5 rounded-full bg-blue-500 transition-all cursor-pointer' 
+                    : 'w-2.5 h-2.5 rounded-full bg-slate-700 hover:bg-slate-600 transition-all cursor-pointer';
+            }
+        }
+
+        function changeProduct(delta) { activeIndex = (activeIndex + delta + menuProducts.length) % menuProducts.length; renderActiveProduct(); }
+        function goToProduct(idx) { activeIndex = idx; renderActiveProduct(); }
+        renderActiveProduct();
+
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            studentName = document.getElementById('student-name-input').value.trim() || 'Usuario';
+            localStorage.setItem('mi_nombre_delivery', studentName);
+            document.getElementById('btn-login').innerHTML = `<span>Ingresando...</span>`;
+            document.getElementById('btn-login').disabled = true;
+            socket.emit('student_login', { name: studentName, client_id: clientId });
+        });
+
+        let pendingToxicOrder = null;
+
+        function selectProductCard(pid, name, emoji, place) {
+            socket.emit('client_select_product', { client_id: clientId, product_id: pid, product_name: name, product_emoji: emoji });
+            if (pid === 'p5') {
+                pendingToxicOrder = { pid, name, emoji, place };
+                document.getElementById('toxic-joke-modal').classList.remove('hidden');
+            }
+        }
+
+        function confirmToxicOrder() {
+            document.getElementById('toxic-joke-modal').classList.add('hidden');
+            if (pendingToxicOrder) {
+                socket.emit('client_select_product', { 
+                    client_id: clientId,
+                    product_id: pendingToxicOrder.pid, 
+                    product_name: pendingToxicOrder.name, 
+                    product_emoji: pendingToxicOrder.emoji 
+                });
+            }
+        }
+
+        function closeToxicModal() {
+            document.getElementById('toxic-joke-modal').classList.add('hidden');
+        }
+
+        socket.on('room_full_event', (data) => {
+            switchScreen('screen-room-full');
+            setContainerColor('bg-rose-950', 'border-rose-900');
+        });
+
+        let clientSimElapsed = 0.0;
+        let clientFreidoraElapsed = 0.0;
+        
+        const deliverySound = new Audio('/sounds/entregado.mp3');
+        let hasPlayedDeliverySound = false;
+
+        socket.on('state_change', (data) => {
+            console.log('[State Change]', data);
+
+            if (data.student_name) {
+                studentName = data.student_name;
+                if (document.getElementById('menu-student-name')) document.getElementById('menu-student-name').innerText = studentName;
+                if (document.getElementById('ontime-student')) document.getElementById('ontime-student').innerText = studentName;
+                if (document.getElementById('late-student')) document.getElementById('late-student').innerText = studentName;
+                if (document.getElementById('solved-student')) document.getElementById('solved-student').innerText = studentName;
+            }
+
+            if (data.elapsed_sim_time !== undefined) {
+                clientSimElapsed = data.elapsed_sim_time;
+            } else if (data.sim_start_time) {
+                clientSimElapsed = 0.0;
+            }
+
+            if (data.state === 'lobby') {
+                hasPlayedDeliverySound = false;
+                switchScreen('screen-lobby');
+                setContainerColor('bg-slate-900', 'border-slate-800');
+                
+            } else if (data.state === 'menu') {
+                hasPlayedDeliverySound = false;
+                switchScreen('screen-menu');
+                setContainerColor('bg-slate-900', 'border-slate-800');
+                renderActiveProduct();
+                
+            } else if (data.state === 'kitchen_waiting') {
+                hasPlayedDeliverySound = false;
+                switchScreen('screen-kitchen-waiting');
+                if (data.product_name && (data.product_name.includes('🧪') || data.product_name.includes('Mercurio') || data.product_name.includes('pierdo'))) {
+                    setContainerColor('bg-emerald-950', 'border-emerald-500');
+                } else {
+                    setContainerColor('bg-blue-900', 'border-blue-700');
+                }
+                if (data.product_name) document.getElementById('kitchen-product-name').innerText = data.product_name;
+
+            } else if (data.state === 'phase2_challenge') {
+                if (document.getElementById('screen-kitchen-waiting').classList.contains('hidden') && 
+                    document.getElementById('screen-menu').classList.contains('hidden')) {
+                    switchScreen('screen-kitchen-waiting');
+                    setContainerColor('bg-blue-900', 'border-blue-700');
+                }
+
+            } else if (data.state === 'simulation_running') {
+                switchScreen('screen-simulation-running');
+                setContainerColor('bg-slate-900', 'border-emerald-500');
+                if (data.product_name) document.getElementById('running-product-name').innerText = data.product_name;
+                startSimClock();
+
+            } else if (data.state === 'phase3_ontime') {
+                if (!hasPlayedDeliverySound) {
+                    deliverySound.play().catch(e => console.log('Audio autoplay prevented:', e));
+                    hasPlayedDeliverySound = true;
+                }
+                switchScreen('screen-phase3-ontime');
+                setContainerColor('bg-emerald-600', 'border-emerald-400');
+                if (data.product_name) document.getElementById('ontime-title-text').innerText = `¡Tu ${data.product_name} ha llegado! 🎉`;
+                if (data.time_x !== undefined) document.getElementById('ontime-time-x').innerText = `${data.time_x} s`;
+
+            } else if (data.state === 'phase3_late') {
+                if (!hasPlayedDeliverySound) {
+                    deliverySound.play().catch(e => console.log('Audio autoplay prevented:', e));
+                    hasPlayedDeliverySound = true;
+                }
+                switchScreen('screen-phase3-late');
+                setContainerColor('bg-rose-600', 'border-rose-400');
+                if (data.product_name) document.getElementById('late-title-text').innerText = `Tu ${data.product_name} tardó un poco más 🛵💨`;
+                if (data.time_x !== undefined) document.getElementById('late-time-x').innerText = `${data.time_x} s`;
+
+            } else if (data.state === 'phase4_freidora') {
+                switchScreen('screen-phase4-freidora');
+                setContainerColor('bg-slate-900', 'border-rose-600');
+                if (data.product_name) {
+                    document.getElementById('freidora-product-title').innerText = data.product_name;
+                    document.getElementById('freidora-item-name').innerText = data.product_name;
+                }
+                if (data.incident_info) {
+                    document.getElementById('freidora-icon-emoji').innerText = data.incident_info.emoji || '🚧';
+                    document.getElementById('freidora-badge-text').innerText = data.incident_info.badge || 'TRÁFICO';
+                    document.getElementById('freidora-alert-title').innerText = data.incident_info.title || '⚠️ Incidencia en la Ruta';
+                    document.getElementById('freidora-alert-detail').innerText = data.incident_info.detail || 'El sistema está monitoreando la vía e intentando un desvío alternativo lo antes posible...';
+                }
+                clientFreidoraElapsed = 0.0;
+                startFreidoraClock();
+
+            } else if (data.state === 'success_final') {
+                if (!hasPlayedDeliverySound) {
+                    deliverySound.play().catch(e => console.log('Audio autoplay prevented:', e));
+                    hasPlayedDeliverySound = true;
+                }
+                switchScreen('screen-freidora-solved');
+                setContainerColor(data.is_late ? 'bg-rose-900' : 'bg-teal-700', data.is_late ? 'border-rose-500' : 'border-teal-400');
+                if (data.incident_info) {
+                    document.getElementById('solved-icon-emoji').innerText = data.incident_info.emoji || '🛵✨';
+                    if (data.incident_info.solved_detail) {
+                        document.getElementById('solved-detail-text').innerText = data.incident_info.solved_detail;
+                    }
+                }
+                if (data.product_name) {
+                    const baseSolvedTitle = data.incident_info ? data.incident_info.solved_title : `Tu ${data.product_name} superó el tráfico`;
+                    if (data.is_late) {
+                        document.getElementById('solved-title-text').innerText = `${baseSolvedTitle} pero llegó atrasado 🛵💨`;
+                        document.getElementById('solved-badge').innerText = `🔴 ¡Resuelto (${data.incident_info ? data.incident_info.solved_badge : 'Tráfico'} - Retrasado)!`;
+                        document.getElementById('solved-badge').className = 'px-3.5 py-1 rounded-full bg-white text-rose-800 font-black text-[11px] uppercase tracking-widest shadow';
+                        document.getElementById('solved-status-badge').innerText = '🔴 Retrasado en Ruta';
+                        document.getElementById('solved-status-badge').className = 'font-bold text-rose-300';
+                    } else {
+                        document.getElementById('solved-title-text').innerText = `${baseSolvedTitle} a tiempo 🎉`;
+                        document.getElementById('solved-badge').innerText = `🟢 ¡Resuelto (${data.incident_info ? data.incident_info.solved_badge : 'Tráfico'})!`;
+                        document.getElementById('solved-badge').className = 'px-3.5 py-1 rounded-full bg-white text-emerald-800 font-black text-[11px] uppercase tracking-widest shadow';
+                        document.getElementById('solved-status-badge').innerText = '🟢 A Tiempo en Ruta';
+                        document.getElementById('solved-status-badge').className = 'font-bold text-emerald-300';
+                    }
+                }
+                if (data.time_x !== undefined) document.getElementById('solved-time-x').innerText = `${data.time_x} s`;
+                if (data.delivered_time !== undefined) document.getElementById('solved-real-time').innerText = `${data.delivered_time} s`;
+            }
+        });
+
+        function setContainerColor(bgClass, borderClass) {
+            mainContainer.className = `max-w-md mx-auto w-full min-h-screen flex flex-col justify-between ${bgClass} border-x ${borderClass} shadow-2xl relative overflow-hidden transition-colors duration-500`;
+        }
+
+        // LIMPIEZA ABSOLUTA E INMEDIATA DE CRONÓMETROS AL CAMBIAR DE PANTALLA
+        function switchScreen(screenId) {
+            if (['screen-phase3-ontime', 'screen-phase3-late', 'screen-freidora-solved', 'screen-simulation-running'].includes(screenId)) {
+                const toxicModal = document.getElementById('toxic-joke-modal');
+                if (toxicModal) toxicModal.classList.add('hidden');
+            }
+            if (screenId !== 'screen-simulation-running') {
+                if (simStopwatchTimer) { clearInterval(simStopwatchTimer); simStopwatchTimer = null; }
+            }
+            if (screenId !== 'screen-phase4-freidora') {
+                if (freidoraTimer) { clearInterval(freidoraTimer); freidoraTimer = null; }
+            }
+            const screens = ['screen-login', 'screen-room-full', 'screen-lobby', 'screen-menu', 'screen-kitchen-waiting', 'screen-simulation-running', 'screen-phase3-ontime', 'screen-phase3-late', 'screen-phase4-freidora', 'screen-freidora-solved'];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden', id !== screenId);
+            });
+        }
+
+        function startSimClock() {
+            if (simStopwatchTimer) { clearInterval(simStopwatchTimer); simStopwatchTimer = null; }
+            const display = document.getElementById('live-stopwatch-display');
+            simStopwatchTimer = setInterval(() => {
+                clientSimElapsed += 0.1;
+                const mins = Math.floor(clientSimElapsed / 60);
+                const secs = (clientSimElapsed % 60).toFixed(1);
+                const mStr = String(mins).padStart(2, '0');
+                const sStr = (secs < 10 ? '0' : '') + secs;
+                if (display) display.innerText = `${mStr}:${sStr}s`;
+            }, 100);
+        }
+
+        function startFreidoraClock() {
+            if (freidoraTimer) { clearInterval(freidoraTimer); freidoraTimer = null; }
+            const display = document.getElementById('freidora-clock');
+            freidoraTimer = setInterval(() => {
+                clientFreidoraElapsed += 0.1;
+                const mins = Math.floor(clientFreidoraElapsed / 60);
+                const secs = (clientFreidoraElapsed % 60).toFixed(1);
+                const mStr = String(mins).padStart(2, '0');
+                const sStr = (secs < 10 ? '0' : '') + secs;
+                if (display) display.innerText = `${mStr}:${sStr}s...`;
+            }, 100);
+        }
+    </script>
+</body>
+</html>
