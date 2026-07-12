@@ -353,12 +353,25 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     sid = request.sid
+    disconnected_cid = None
     for cid, c in list(clients.items()):
         if c.get('socket_id') == sid:
             c['socket_id'] = None
             c['is_online'] = False
+            disconnected_cid = cid
             break
+            
     broadcast_admin_update()
+    
+    if disconnected_cid:
+        def check_reconnect():
+            socketio.sleep(10)
+            if disconnected_cid in clients and not clients[disconnected_cid].get('is_online'):
+                del clients[disconnected_cid]
+                broadcast_admin_update()
+                print(f"[Sistema] Cliente {disconnected_cid} eliminado por inactividad tras desconexión.")
+                
+        socketio.start_background_task(check_reconnect)
 
 @socketio.on('join_admin')
 def handle_join_admin():
