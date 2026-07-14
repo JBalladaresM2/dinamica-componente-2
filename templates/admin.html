@@ -373,6 +373,9 @@
                             <span>👥 Supervisión en Vivo y Registro de Tiempos</span>
                             <span id="table-count-badge" class="bg-blue-500/20 text-blue-400 font-mono text-xs py-0.5 px-2.5 rounded-full font-bold">0 / 25</span>
                         </h3>
+                        <button onclick="exportToCSV()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5" title="Exportar la tabla actual a CSV para Excel">
+                            <span>📥 Exportar CSV</span>
+                        </button>
                     </div>
 
                     <div class="overflow-x-auto max-h-[480px]">
@@ -407,6 +410,7 @@
         let currentMaxClients = 25;
         let backendElapsedSimTime = 0.0;
         let isClockRunning = false;
+        let lastClientsData = [];
 
         socket.on('connect', () => {
             wsIndicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
@@ -424,6 +428,7 @@
         socket.on('admin_data_sync', (data) => {
             currentMaxClients = data.max_clients;
             backendElapsedSimTime = data.elapsed_sim_time || 0.0;
+            lastClientsData = data.clients;
             
             updateInputIfNotFocused('inp-lambda_param', data.lambda_param.toFixed(4));
             updateInputIfNotFocused('inp-time_limit_x', data.time_limit_x.toFixed(1));
@@ -623,6 +628,49 @@
             const div = document.createElement('div');
             div.innerText = text;
             return div.innerHTML;
+        }
+
+        function exportToCSV() {
+            if (!lastClientsData || lastClientsData.length === 0) {
+                alert("No hay datos para exportar.");
+                return;
+            }
+            
+            // BOM para que Excel detecte correctamente la codificación UTF-8
+            let csvContent = "\uFEFF";
+            // Cabeceras
+            csvContent += "Alumno,Platillo,Tiempo_Teorico_X_seg,Tiempo_Real_Entrega_seg,Estado_Final,Llego_Tarde,Tuvo_Incidente\n";
+            
+            lastClientsData.forEach(function(c) {
+                let name = '"' + (c.name || '').replace(/"/g, '""') + '"';
+                let product = '"' + (c.product_name || '').replace(/"/g, '""') + '"';
+                let timeX = c.time_x;
+                let deliveredTime = c.delivered_time ? c.delivered_time : '';
+                
+                // Formatear estado para que sea más legible en el CSV
+                let stateStr = "Desconocido";
+                if (c.status === 'phase3_ontime' || (c.status === 'success_final' && !c.is_late)) stateStr = "Entregado A Tiempo";
+                else if (c.status === 'phase3_late' || (c.status === 'success_final' && c.is_late)) stateStr = "Entregado Tarde";
+                else if (c.status === 'simulation_running') stateStr = "En Ruta";
+                else if (c.status === 'phase4_freidora') stateStr = "Atrapado en Tráfico";
+                else stateStr = c.status;
+
+                let isLate = c.is_late ? 'Si' : 'No';
+                let hadIncident = c.will_have_incident ? 'Si' : 'No';
+                
+                let row = [name, product, timeX, deliveredTime, '"' + stateStr + '"', isLate, hadIncident].join(",");
+                csvContent += row + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "resultados_simulacion_exponencial.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
