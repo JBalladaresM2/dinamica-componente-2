@@ -62,6 +62,9 @@
             </div>
         </header>
 
+        <!-- TOAST OUT OF STOCK -->
+        <div id="out-of-stock-toast" class="hidden fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-rose-600 text-white px-4 py-2 rounded-full font-bold text-xs shadow-lg transition-all animate-bounce text-center w-11/12 max-w-[300px]"></div>
+
         <!-- CONTENIDO INTERACTIVO LIMPIO (TIPO RAPPI / UBER EATS) -->
         <main class="flex-1 flex flex-col justify-center p-6 relative z-10" id="screens-container">
 
@@ -146,11 +149,7 @@
                         <button onclick="changeProduct(1)" class="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-gray-200 font-bold text-xs border border-slate-700 transition">Siguiente ▶</button>
                     </div>
                     <div class="flex items-center justify-center space-x-2 py-1" id="carousel-dots">
-                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 cursor-pointer" onclick="goToProduct(0)"></span>
-                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700 cursor-pointer" onclick="goToProduct(1)"></span>
-                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700 cursor-pointer" onclick="goToProduct(2)"></span>
-                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700 cursor-pointer" onclick="goToProduct(3)"></span>
-                        <span class="w-2.5 h-2.5 rounded-full bg-slate-700 cursor-pointer" onclick="goToProduct(4)"></span>
+                        <!-- Dots generados por JS -->
                     </div>
                 </div>
             </div>
@@ -418,48 +417,60 @@
             }
         });
 
-        const menuProducts = [
-            { id: 'p1', emoji: '🍔', img: '/imgs/burguer.png', name: 'La Semestre-Killer', place: 'McMath', category: 'Hamburguesa con queso', badgeColor: 'text-blue-400', btnColor: 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30' },
-            { id: 'p2', emoji: '🍕', img: '/imgs/pizza.png', name: 'La Integral', place: 'Pizza Gauss', category: 'Pizza de pepperoni', badgeColor: 'text-purple-400', btnColor: 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30' },
-            { id: 'p3', emoji: '🍟', img: '/imgs/papas.png', name: 'Papas Finitas', place: 'Estocástica Fries', category: 'Papas fritas crujientes', badgeColor: 'text-amber-400', btnColor: 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30' },
-            { id: 'p4', emoji: '🌭', img: '/imgs/hotdog.png', name: 'El Perro Exponencial', place: 'Distribución HotDogs', category: 'Hot dog gourmet', badgeColor: 'text-rose-400', btnColor: 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30' },
-            { id: 'p5', emoji: '🧪', img: '/imgs/mercurio.png', name: 'Por si pierdo el semestre', place: 'Lab. de Toxicología (Sótano 3)', category: '1LT de Mercurio liquido', badgeColor: 'text-emerald-400 animate-pulse', btnColor: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30' }
-        ];
-
+        let menuProducts = [];
         let activeIndex = 0;
 
         function renderActiveProduct() {
+            if (menuProducts.length === 0) return;
+            if (activeIndex >= menuProducts.length) activeIndex = 0;
+            
             const product = menuProducts[activeIndex];
             const container = document.getElementById('product-card-display');
             container.classList.remove('card-enter');
             void container.offsetWidth;
             container.classList.add('card-enter');
 
+            const isOutOfStock = product.stock === 0;
+            const stockBadge = (product.stock > 0) ? `<span class="text-[9px] text-emerald-400 font-bold block mb-1">¡Quedan ${product.stock} disponibles!</span>` : '';
+            const outOfStockOverlay = isOutOfStock ? `<div class="absolute inset-0 bg-slate-900/70 backdrop-blur-[2px] z-10 rounded-3xl flex flex-col items-center justify-center"><span class="text-4xl mb-2">❌</span><span class="text-rose-400 font-black text-lg bg-slate-900 px-3 py-1 rounded border border-rose-500/50">AGOTADO</span></div>` : '';
+            const btnState = isOutOfStock ? `disabled class="w-full mt-4 py-3.5 px-4 rounded-2xl bg-slate-700 text-gray-500 font-extrabold text-sm flex items-center justify-center space-x-2 cursor-not-allowed"` : `onclick="selectProductCard('${product.id}', '${product.name}', '${product.emoji}', '${product.place}')" class="w-full mt-4 py-3.5 px-4 rounded-2xl ${product.btnColor} text-white font-extrabold text-sm transition shadow-lg flex items-center justify-center space-x-2 active:scale-95"`;
+
             container.innerHTML = `
-                <div class="flex justify-center items-center my-2 h-44">
+                ${outOfStockOverlay}
+                <div class="flex justify-center items-center my-2 h-44 ${isOutOfStock ? 'opacity-50 grayscale' : ''}">
                     <img src="${product.img}" alt="${product.name}" class="max-h-40 max-w-[160px] object-contain drop-shadow-[0_10px_15px_rgba(0,0,0,0.7)] transition-transform duration-300 hover:scale-105">
                 </div>
-                <div class="text-center my-1">
+                <div class="text-center my-1 ${isOutOfStock ? 'opacity-50' : ''}">
+                    ${stockBadge}
                     <span class="text-[10px] font-extrabold uppercase tracking-widest ${product.badgeColor} block">${product.category} • Lugar: ${product.place}</span>
                     <h3 class="text-xl font-black text-white mt-1 leading-tight">${product.name}</h3>
                 </div>
-                <button onclick="selectProductCard('${product.id}', '${product.name}', '${product.emoji}', '${product.place}')"
-                        class="w-full mt-4 py-3.5 px-4 rounded-2xl ${product.btnColor} text-white font-extrabold text-sm transition shadow-lg flex items-center justify-center space-x-2 active:scale-95">
-                    <span>¡Pedir Ahora ${product.emoji}!</span>
+                <button ${btnState}>
+                    <span>${isOutOfStock ? 'No disponible' : '¡Pedir Ahora ' + product.emoji + '!'}</span>
                 </button>
             `;
 
-            const dots = document.getElementById('carousel-dots').children;
-            for (let i = 0; i < dots.length; i++) {
-                dots[i].className = (i === activeIndex) 
+            const dotsContainer = document.getElementById('carousel-dots');
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < menuProducts.length; i++) {
+                const dot = document.createElement('span');
+                dot.className = (i === activeIndex) 
                     ? 'w-4 h-2.5 rounded-full bg-blue-500 transition-all cursor-pointer' 
                     : 'w-2.5 h-2.5 rounded-full bg-slate-700 hover:bg-slate-600 transition-all cursor-pointer';
+                dot.onclick = () => goToProduct(i);
+                dotsContainer.appendChild(dot);
             }
         }
 
-        function changeProduct(delta) { activeIndex = (activeIndex + delta + menuProducts.length) % menuProducts.length; renderActiveProduct(); }
-        function goToProduct(idx) { activeIndex = idx; renderActiveProduct(); }
-        renderActiveProduct();
+        function changeProduct(delta) { 
+            if(menuProducts.length === 0) return;
+            activeIndex = (activeIndex + delta + menuProducts.length) % menuProducts.length; 
+            renderActiveProduct(); 
+        }
+        function goToProduct(idx) { 
+            activeIndex = idx; 
+            renderActiveProduct(); 
+        }
 
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -516,6 +527,13 @@
                 if (document.getElementById('ontime-student')) document.getElementById('ontime-student').innerText = studentName;
                 if (document.getElementById('late-student')) document.getElementById('late-student').innerText = studentName;
                 if (document.getElementById('solved-student')) document.getElementById('solved-student').innerText = studentName;
+            }
+
+            if (data.menu_products) {
+                menuProducts = data.menu_products;
+                if (!document.getElementById('screen-menu').classList.contains('hidden')) {
+                    renderActiveProduct();
+                }
             }
 
             if (data.elapsed_sim_time !== undefined) {
@@ -631,6 +649,24 @@
         function setContainerColor(bgClass, borderClass) {
             mainContainer.className = `max-w-md mx-auto w-full min-h-screen flex flex-col justify-between ${bgClass} border-x ${borderClass} shadow-2xl relative overflow-hidden transition-colors duration-500`;
         }
+
+        socket.on('menu_sync', (data) => {
+             if (data.menu_products) {
+                 menuProducts = data.menu_products;
+                 if (!document.getElementById('screen-menu').classList.contains('hidden')) {
+                     renderActiveProduct();
+                 }
+             }
+        });
+
+        socket.on('out_of_stock_event', (data) => {
+            const toast = document.getElementById('out-of-stock-toast');
+            if(toast) {
+                toast.innerText = data.message;
+                toast.classList.remove('hidden');
+                setTimeout(() => { toast.classList.add('hidden'); }, 4000);
+            }
+        });
 
         // LIMPIEZA ABSOLUTA E INMEDIATA DE CRONÓMETROS AL CAMBIAR DE PANTALLA
         function switchScreen(screenId) {

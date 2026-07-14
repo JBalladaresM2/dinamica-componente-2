@@ -42,6 +42,15 @@ system_state = {
     'current_phase': 1
 }
 
+# Inventario de Productos
+menu_products = [
+    { 'id': 'p1', 'emoji': '🍔', 'img': '/imgs/burguer.png', 'name': 'La Semestre-Killer', 'place': 'McMath', 'category': 'Hamburguesa con queso', 'badgeColor': 'text-blue-400', 'btnColor': 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30', 'stock': -1 }, # -1 = ilimitado
+    { 'id': 'p2', 'emoji': '🍕', 'img': '/imgs/pizza.png', 'name': 'La Integral', 'place': 'Pizza Gauss', 'category': 'Pizza de pepperoni', 'badgeColor': 'text-purple-400', 'btnColor': 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30', 'stock': -1 },
+    { 'id': 'p3', 'emoji': '🍟', 'img': '/imgs/papas.png', 'name': 'Papas Finitas', 'place': 'Estocástica Fries', 'category': 'Papas fritas crujientes', 'badgeColor': 'text-amber-400', 'btnColor': 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30', 'stock': -1 },
+    { 'id': 'p4', 'emoji': '🌭', 'img': '/imgs/hotdog.png', 'name': 'El Perro Exponencial', 'place': 'Distribución HotDogs', 'category': 'Hot dog gourmet', 'badgeColor': 'text-rose-400', 'btnColor': 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30', 'stock': -1 },
+    { 'id': 'p5', 'emoji': '🧪', 'img': '/imgs/mercurio.png', 'name': 'Por si pierdo el semestre', 'place': 'Lab. de Toxicología (Sótano 3)', 'category': '1LT de Mercurio liquido', 'badgeColor': 'text-emerald-400 animate-pulse', 'btnColor': 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30', 'stock': -1 }
+]
+
 # ------------------------------------------------------------------------------
 # MÓDULO MATEMÁTICO (DISTRIBUCIÓN EXPONENCIAL)
 # ------------------------------------------------------------------------------
@@ -342,7 +351,8 @@ def broadcast_admin_update():
         'elapsed_sim_time': elapsed_sim,
         'expected_value': round(1.0 / lambda_val, 2) if lambda_val > 0 else 0,
         'lobby_open': system_state['lobby_open'],
-        'clients': clients_list
+        'clients': clients_list,
+        'menu_products': menu_products
     }, room='admin', namespace='/')
 
 
@@ -395,7 +405,8 @@ def handle_student_login(data):
             'delivered_time': clients[client_id].get('delivered_time'),
             'incident_info': clients[client_id].get('incident_info'),
             'lobby_open': system_state['lobby_open'],
-            'sim_start_time': system_state['sim_start_time']
+            'sim_start_time': system_state['sim_start_time'],
+            'menu_products': menu_products
         })
         broadcast_admin_update()
         return
@@ -430,7 +441,8 @@ def handle_student_login(data):
     emit('state_change', {
         'state': initial_status,
         'student_name': student_name,
-        'lobby_open': system_state['lobby_open']
+        'lobby_open': system_state['lobby_open'],
+        'menu_products': menu_products
     })
     broadcast_admin_update()
 
@@ -464,6 +476,17 @@ def handle_client_select_product(data):
     product_name = data.get('product_name', 'La Semestre-Killer')
     product_emoji = data.get('product_emoji', '🍔')
     
+    # Validar stock
+    selected_prod = next((p for p in menu_products if p['id'] == product_id), None)
+    if selected_prod and selected_prod['stock'] != -1:
+        if selected_prod['stock'] <= 0:
+            emit('out_of_stock_event', {'message': f'¡Lo sentimos! Ya no nos queda {product_name}. Por favor, elige otra opción.'})
+            return
+        else:
+            selected_prod['stock'] -= 1
+            # Actualizar a todos con el nuevo stock
+            socketio.emit('menu_sync', {'menu_products': menu_products}, namespace='/')
+
     time_x = generate_exponential_time(system_state['lambda_param'])
     clients[client_id]['product'] = product_id
     clients[client_id]['product_name'] = f"{product_emoji} {product_name}"
@@ -586,6 +609,21 @@ def handle_admin_update_config(data):
                 system_state['stagger_release_max'] = round(val, 1)
                 
         broadcast_admin_update()
+    except (ValueError, TypeError) as e:
+        pass
+
+@socketio.on('admin_update_stock')
+def handle_admin_update_stock(data):
+    try:
+        product_id = data.get('product_id')
+        new_stock = data.get('stock')
+        if product_id and new_stock is not None:
+            for p in menu_products:
+                if p['id'] == product_id:
+                    p['stock'] = int(new_stock)
+                    break
+            socketio.emit('menu_sync', {'menu_products': menu_products}, namespace='/')
+            broadcast_admin_update()
     except (ValueError, TypeError) as e:
         pass
 
