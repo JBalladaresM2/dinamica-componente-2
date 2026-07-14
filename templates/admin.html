@@ -79,11 +79,12 @@
         </div>
 
         <div id="tab-live">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                <!-- COLUMNA IZQUIERDA (EN VIVO) -->
-                <div class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                
+                <!-- COLUMNA 1 y 2: TABLA DE SUPERVISIÓN Y RESULTADOS -->
+                <div class="lg:col-span-2 space-y-6">
                     <!-- RELOJ EN VIVO SINCRONIZADO CON EL SERVIDOR -->
-                    <div class="bg-slate-900 rounded-2xl p-5 border border-emerald-500/40 shadow-xl flex items-center justify-between">
+                    <div class="bg-slate-900 rounded-2xl p-5 border border-slate-700 shadow-xl flex items-center justify-between">
                         <div>
                             <span class="text-[11px] font-black uppercase tracking-wider text-emerald-400 block">⏱️ Cronómetro Global en Ruta</span>
                             <span id="global-stopwatch-status" class="text-xs text-gray-400 font-medium block mt-0.5">Esperando arrancar simulación...</span>
@@ -93,146 +94,103 @@
                         </div>
                     </div>
 
-                    <!-- RESULTADOS REALES (HUMANOS Y BOTS) -->
-                    <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl mt-auto">
+                    <!-- TABLA DE SUPERVISIÓN EN VIVO -->
+                    <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+                        <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <span>👥 Supervisión en Vivo</span>
+                                <span id="table-count-badge" class="bg-blue-500/20 text-blue-400 font-mono text-xs py-0.5 px-2.5 rounded-full font-bold">0 / 25</span>
+                            </h3>
+                            <button onclick="exportToCSV()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5" title="Exportar la tabla actual a CSV para Excel">
+                                <span>📥 CSV</span>
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto max-h-[480px]">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead class="sticky top-0 z-20 bg-slate-950 text-gray-400 font-semibold border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-3">#</th>
+                                        <th class="py-3 px-3">Alumno</th>
+                                        <th class="py-3 px-3">Platillo</th>
+                                        <th class="py-3 px-3 text-center">Teórico X</th>
+                                        <th class="py-3 px-3 text-center">Real Entrega</th>
+                                        <th class="py-3 px-3 text-center">Estado</th>
+                                        <th class="py-3 px-3 text-right">Forzar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-table-body" class="divide-y divide-slate-800/70 font-medium text-gray-300">
+                                    <tr id="empty-table-row">
+                                        <td colspan="7" class="py-10 text-center text-gray-500">Ningún estudiante en línea.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMNA 3: ACCIONES Y RESULTADOS -->
+                <div class="space-y-6 flex flex-col h-full">
+                    
+                    <!-- RESULTADOS REALES -->
+                    <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
                         <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
-                            <h2 class="text-sm font-black text-white uppercase tracking-wider">
-                                🏁 Resultados Reales
-                            </h2>
-                            <span class="text-xs text-gray-400 font-bold bg-slate-800 px-2 py-1 rounded">Total Entregas: <span id="real-total-count" class="text-white">0</span></span>
+                            <h2 class="text-sm font-black text-white uppercase tracking-wider">🏁 Resultados</h2>
+                            <span class="text-xs text-gray-400 font-bold bg-slate-800 px-2 py-1 rounded">Total: <span id="real-total-count" class="text-white">0</span></span>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
                             <div class="bg-emerald-950/50 border border-emerald-500/30 rounded-xl p-4 text-center">
-                                <div class="text-emerald-400 font-black text-xs uppercase tracking-widest">🟢 A Tiempo</div>
+                                <div class="text-emerald-400 font-black text-[10px] uppercase tracking-widest">🟢 A Tiempo</div>
                                 <div class="text-emerald-300 text-3xl font-black mt-2" id="real-ontime-count">0</div>
                                 <div class="text-emerald-400/70 text-[11px] font-bold mt-1" id="real-ontime-pct">0%</div>
                             </div>
                             <div class="bg-rose-950/50 border border-rose-500/30 rounded-xl p-4 text-center">
-                                <div class="text-rose-400 font-black text-xs uppercase tracking-widest">🔴 Retrasados</div>
+                                <div class="text-rose-400 font-black text-[10px] uppercase tracking-widest">🔴 Retrasados</div>
                                 <div class="text-rose-300 text-3xl font-black mt-2" id="real-late-count">0</div>
                                 <div class="text-rose-400/70 text-[11px] font-bold mt-1" id="real-late-pct">0%</div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- COLUMNA DERECHA (EN VIVO) -->
-                <div class="space-y-6 flex flex-col h-full">
                     <!-- ACCIONES SIMPLIFICADAS DEL GUIÓN -->
-                    <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-5">
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-                            <h2 class="text-sm font-black text-white uppercase tracking-wider">
-                                🎬 Guión Simplificado de Aula (Paso a Paso)
-                            </h2>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-400 font-bold">Fase:</span>
-                                <span id="badge-current-phase" class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 font-mono font-black text-xs border border-blue-500/30">1. MENÚ & ELECCIÓN</span>
-                            </div>
+                    <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
+                        <h2 class="text-xs font-black text-white uppercase tracking-wider border-b border-slate-800 pb-2">🎬 Acciones de Simulación</h2>
+                        
+                        <!-- PASO 1 -->
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-700">
+                            <button onclick="triggerPhase1()" class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow transition active:scale-95 flex items-center justify-between">
+                                <span>🚀 1. Liberar Menú</span>
+                                <span class="bg-blue-800 text-[10px] px-2 py-0.5 rounded">Paso 1</span>
+                            </button>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            
-                            <!-- PASO 1 -->
-                            <div class="bg-slate-950 p-4 rounded-xl border border-blue-500/30 flex flex-col justify-between space-y-3">
-                                <div>
-                                    <span class="text-[10px] font-black uppercase bg-blue-500 text-slate-950 px-2 py-0.5 rounded block w-fit mb-1.5">Paso 1</span>
-                                    <h4 class="font-bold text-sm text-white">Liberar Menú a Alumnos</h4>
-                                    <p class="text-xs text-gray-400 mt-1 leading-relaxed">Abre el menú en sus celulares. Ellos eligen su comida y esperan tranquilamente viendo "Orden en Cocina... 👨‍🍳".</p>
-                                </div>
-                                <button onclick="triggerPhase1()" class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow transition active:scale-95">
-                                    🚀 1. Liberar Menú
-                                </button>
-                            </div>
+                        <!-- PASO 2 -->
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-700">
+                            <button onclick="triggerPhase3()" class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow transition active:scale-95 flex items-center justify-between">
+                                <span>🟢 2. Iniciar en Ruta</span>
+                                <span class="bg-blue-800 text-[10px] px-2 py-0.5 rounded">Paso 2</span>
+                            </button>
+                        </div>
 
-                            <!-- PASO 2 -->
-                            <div class="bg-slate-950 p-4 rounded-xl border border-emerald-500/30 flex flex-col justify-between space-y-3">
-                                <div>
-                                    <span class="text-[10px] font-black uppercase bg-emerald-500 text-slate-950 px-2 py-0.5 rounded block w-fit mb-1.5">Paso 2</span>
-                                    <h4 class="font-bold text-sm text-white">Iniciar Simulación en Ruta</h4>
-                                    <p class="text-xs text-gray-400 mt-1 leading-relaxed">Arranca el cronómetro. Los pedidos normales avanzan en moto. Y de forma aleatoria, los N elegidos sufren el incidente en ruta automáticamente.</p>
-                                </div>
-                                <button onclick="triggerPhase3()" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow transition active:scale-95">
-                                    🟢 2. Iniciar Simulación en Ruta
-                                </button>
-                            </div>
-
-                            <!-- PASO 3 -->
-                            <div class="bg-slate-950 p-4 rounded-xl border border-teal-500/30 flex flex-col justify-between space-y-3">
-                                <div>
-                                    <span class="text-[10px] font-black uppercase bg-teal-500 text-slate-950 px-2 py-0.5 rounded block w-fit mb-1.5">Paso 3 • Resolución Tráfico</span>
-                                    <h4 class="font-bold text-sm text-white">Liberar Tráfico Escalonado</h4>
-                                    <p class="text-xs text-gray-400 mt-1 leading-relaxed">Tras explicar Falta de Memoria, descongelar a los atrapados. Los pedidos llegan uno a uno en segundos aleatorios.</p>
-                                </div>
-                                <button onclick="releasePhase4()" class="w-full py-3 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-extrabold text-xs shadow transition active:scale-95">
-                                    ✅ 3. Liberar Tráfico Escalonado
-                                </button>
-                            </div>
-
-                            <!-- REINICIAR -->
-                            <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col justify-between space-y-3">
-                                <div>
-                                    <span class="text-[10px] font-black uppercase bg-slate-800 text-gray-300 px-2 py-0.5 rounded block w-fit mb-1.5">Sistema</span>
-                                    <h4 class="font-bold text-sm text-white">Reiniciar Dinámica</h4>
-                                    <p class="text-xs text-gray-400 mt-1 leading-relaxed">Regresa todos los celulares conectados al Lobby inicial para una nueva demostración.</p>
-                                </div>
-                                <button onclick="resetSimulation()" class="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-gray-300 font-extrabold text-xs transition border border-slate-700 active:scale-95">
-                                    🔄 Reiniciar Todo
-                                </button>
-                            </div>
-
-                            <!-- BOTS MASIVO -->
-                            <div class="sm:col-span-2 bg-indigo-950/30 p-4 rounded-xl border border-indigo-500/40 flex flex-col justify-between space-y-3">
-                                <div>
-                                    <span class="text-[10px] font-black uppercase bg-indigo-500 text-slate-950 px-2 py-0.5 rounded block w-fit mb-1.5">Masivo</span>
-                                    <h4 class="font-bold text-sm text-white">Simulación Rápida de Bots</h4>
-                                    <p class="text-xs text-gray-400 mt-1 leading-relaxed">Simula instantáneamente la misma cantidad de bots que la capacidad máxima del salón usando el λ y x actuales.</p>
-                                </div>
-                                <div class="flex items-center space-x-3">
-                                    <button onclick="simulateBots()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 transition active:scale-95">
-                                        🤖 Simular
-                                    </button>
-                                    <button onclick="clearBots()" class="py-2.5 px-4 rounded-xl bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/30 text-rose-400 font-extrabold text-xs transition active:scale-95 whitespace-nowrap" title="Eliminar todos los bots">
-                                        🗑️ Limpiar
-                                    </button>
-                                </div>
-                            </div>
+                        <!-- PASO 3 -->
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-700">
+                            <button onclick="releasePhase4()" class="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow transition active:scale-95 flex items-center justify-between">
+                                <span>✅ 3. Liberar Tráfico</span>
+                                <span class="bg-blue-800 text-[10px] px-2 py-0.5 rounded">Paso 3</span>
+                            </button>
                         </div>
                     </div>
-                </div>
-            </div>
+                    
+                    <div class="bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-xl space-y-4">
+                        <h2 class="text-xs font-black text-white uppercase tracking-wider border-b border-slate-800 pb-2">🛠️ Herramientas</h2>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="simulateBots()" class="py-2.5 px-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-extrabold text-xs transition active:scale-95">🤖 Bots</button>
+                            <button onclick="clearBots()" class="py-2.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-gray-300 font-extrabold text-xs transition active:scale-95">🗑️ Limpiar</button>
+                        </div>
+                        <button onclick="resetSimulation()" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-rose-900 text-rose-400 font-extrabold text-xs transition active:scale-95 mt-2">🔄 Reiniciar Todo</button>
+                    </div>
 
-            <!-- TABLA DE SUPERVISIÓN EN VIVO (FULL WIDTH) -->
-            <div class="mt-6 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
-                <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                        <span>👥 Supervisión en Vivo y Registro de Tiempos</span>
-                        <span id="table-count-badge" class="bg-blue-500/20 text-blue-400 font-mono text-xs py-0.5 px-2.5 rounded-full font-bold">0 / 25</span>
-                    </h3>
-                    <button onclick="exportToCSV()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5" title="Exportar la tabla actual a CSV para Excel">
-                        <span>📥 Exportar CSV</span>
-                    </button>
-                </div>
-
-                <div class="overflow-x-auto max-h-[480px]">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead class="sticky top-0 z-20 bg-slate-950 text-gray-400 font-semibold border-b border-slate-800">
-                            <tr>
-                                <th class="py-3 px-3">#</th>
-                                <th class="py-3 px-3">Alumno</th>
-                                <th class="py-3 px-3">Platillo</th>
-                                <th class="py-3 px-3 text-center">Teórico X</th>
-                                <th class="py-3 px-3 text-center">Real Entrega</th>
-                                <th class="py-3 px-3 text-center">Estado en Celular</th>
-                                <th class="py-3 px-3 text-right">Forzar</th>
-                            </tr>
-                        </thead>
-                        <tbody id="students-table-body" class="divide-y divide-slate-800/70 font-medium text-gray-300">
-                            <tr id="empty-table-row">
-                                <td colspan="7" class="py-10 text-center text-gray-500">Ningún estudiante en línea.</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
@@ -241,9 +199,9 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 <div class="space-y-6">
                     <!-- RESPUESTA TEÓRICA F(x) PARA CALIFICAR HOJAS -->
-                    <div class="bg-slate-900 rounded-2xl p-5 border-2 border-amber-500/60 shadow-xl space-y-4">
+                    <div class="bg-slate-900 rounded-2xl p-5 border-2 border-slate-700 shadow-xl space-y-4">
                         <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                            <span class="text-xs font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                            <span class="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
                                 <span>📊 Respuesta Teórica F(x) de Hojas</span>
                             </span>
                             <span class="text-[10px] text-gray-400 font-mono">F(x) = 1 - e^(-λx)</span>
@@ -252,7 +210,7 @@
                         <div class="flex items-center justify-between bg-slate-950 p-3.5 rounded-xl border border-slate-800 font-mono">
                             <div>
                                 <span class="text-[10px] uppercase text-gray-400 block">Probabilidad "A Tiempo":</span>
-                                <span id="lbl-prob-calc" class="text-3xl font-black text-amber-400">52.76%</span>
+                                <span id="lbl-prob-calc" class="text-3xl font-black text-emerald-400">52.76%</span>
                             </div>
                             <div class="text-right">
                                 <span class="text-[10px] uppercase text-gray-400 block">Probabilidad "Retrasado":</span>
@@ -261,8 +219,8 @@
                         </div>
 
                         <!-- DESGLOSE POR CUPO MÁXIMO DEL SALÓN -->
-                        <div class="bg-amber-950/30 border border-amber-500/30 p-3.5 rounded-xl space-y-1 text-xs">
-                            <span class="text-[11px] font-black text-amber-300 uppercase block">Proyección según Cupo del Salón (<span id="lbl-max-cls">25</span> alumnos):</span>
+                        <div class="bg-slate-950 border border-slate-700 p-3.5 rounded-xl space-y-1 text-xs">
+                            <span class="text-[11px] font-black text-white uppercase block">Proyección según Cupo del Salón (<span id="lbl-max-cls">25</span> alumnos):</span>
                             <div class="flex justify-between text-gray-200 font-medium">
                                 <span>🟢 A Tiempo (≤ <span id="lbl-lim-sec">15s</span>):</span>
                                 <strong id="lbl-expected-ontime-max" class="text-emerald-400 font-mono font-bold text-sm">~13 alumnos</strong>
@@ -300,12 +258,12 @@
 
                         <!-- GRUPO 1: TEORÍA DE LA DISTRIBUCIÓN (2 COLUMNAS) -->
                         <div class="space-y-2">
-                            <span class="text-[10px] font-black uppercase tracking-widest text-indigo-400 block border-l-2 border-indigo-500 pl-2">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-300 block border-l-2 border-blue-500 pl-2">
                                 1. Teoría de la Distribución
                             </span>
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1">
-                                    <label class="text-[11px] font-bold text-indigo-300 block">Tasa (λ) en s⁻¹</label>
+                                    <label class="text-[11px] font-bold text-gray-300 block">Tasa (λ) en s⁻¹</label>
                                     <div class="flex items-center space-x-1">
                                         <button onclick="adjustInput('lambda_param', -0.01)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold text-xs border border-slate-700">-</button>
                                         <input type="number" id="inp-lambda_param" step="0.005" min="0.001" value="0.05" oninput="submitInput('lambda_param', this.value)"
@@ -316,7 +274,7 @@
                                 </div>
 
                                 <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1">
-                                    <label class="text-[11px] font-bold text-emerald-300 block">Tiempo Límite (x)</label>
+                                    <label class="text-[11px] font-bold text-gray-300 block">Tiempo Límite (x)</label>
                                     <div class="flex items-center space-x-1">
                                         <button onclick="adjustInput('time_limit_x', -1)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold text-xs border border-slate-700">-</button>
                                         <input type="number" id="inp-time_limit_x" step="1" min="1" value="15" oninput="submitInput('time_limit_x', this.value)"
@@ -330,12 +288,12 @@
 
                         <!-- GRUPO 2: SALÓN E INCIDENTES (2 COLUMNAS) -->
                         <div class="space-y-2 pt-2 border-t border-slate-800/60">
-                            <span class="text-[10px] font-black uppercase tracking-widest text-blue-400 block border-l-2 border-blue-500 pl-2">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-300 block border-l-2 border-blue-500 pl-2">
                                 2. Capacidad e Incidentes en Ruta
                             </span>
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1">
-                                    <label class="text-[11px] font-bold text-blue-300 block">Cupo Máximo Salón</label>
+                                    <label class="text-[11px] font-bold text-gray-300 block">Cupo Máximo Salón</label>
                                     <div class="flex items-center space-x-1">
                                         <button onclick="adjustInput('max_clients', -1)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold text-xs border border-slate-700">-</button>
                                         <input type="number" id="inp-max_clients" step="1" min="1" value="25" oninput="submitInput('max_clients', this.value)"
@@ -346,7 +304,7 @@
                                 </div>
 
                                 <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1">
-                                    <label class="text-[11px] font-bold text-rose-300 block">Elegidos para Incidente</label>
+                                    <label class="text-[11px] font-bold text-gray-300 block">Elegidos para Incidente</label>
                                     <div class="flex items-center space-x-1">
                                         <button onclick="adjustInput('frozen_count', -1)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold text-xs border border-slate-700">-</button>
                                         <input type="number" id="inp-frozen_count" step="1" min="0" value="5" oninput="submitInput('frozen_count', this.value)"
@@ -360,14 +318,14 @@
 
                         <!-- GRUPO 3: RANGOS DE TIEMPO AUTOMÁTICOS (2 COLUMNAS) -->
                         <div class="space-y-2 pt-2 border-t border-slate-800/60">
-                            <span class="text-[10px] font-black uppercase tracking-widest text-teal-400 block border-l-2 border-teal-500 pl-2">
+                            <span class="text-[10px] font-black uppercase tracking-widest text-gray-300 block border-l-2 border-blue-500 pl-2">
                                 3. Rango de Tiempos Automáticos
                             </span>
                             <div class="grid grid-cols-2 gap-3">
                                 
                                 <!-- Rango para Congelar Tráfico -->
                                 <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1">
-                                    <label class="text-[11px] font-bold text-amber-300 block">Rango para Congelar Tráfico</label>
+                                    <label class="text-[11px] font-bold text-gray-300 block">Rango para Congelar Tráfico</label>
                                     <div class="flex items-center space-x-1 mt-3">
                                         <button onclick="adjustInput('incident_trigger_max', -0.5)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold text-xs border border-slate-700">-</button>
                                         <input type="number" id="inp-incident_trigger_max" step="0.5" min="0.5" value="12.0" oninput="submitInput('incident_trigger_max', this.value)"
@@ -379,7 +337,7 @@
 
                                 <!-- Rango para Descongelar -->
                                 <div class="bg-slate-950 p-3 rounded-xl border border-slate-800/80 space-y-1">
-                                    <label class="text-[11px] font-bold text-teal-300 block">Rango para Liberar Tráfico</label>
+                                    <label class="text-[11px] font-bold text-gray-300 block">Rango para Liberar Tráfico</label>
                                     <div class="flex items-center space-x-1 mt-3">
                                         <button onclick="adjustInput('stagger_release_max', -0.5)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-gray-300 font-bold text-xs border border-slate-700">-</button>
                                         <input type="number" id="inp-stagger_release_max" step="0.5" min="0.5" value="6.0" oninput="submitInput('stagger_release_max', this.value)"
@@ -440,30 +398,45 @@
             container.innerHTML = '';
             document.getElementById('total-menu-count').innerText = currentMenuProducts.length;
             currentMenuProducts.forEach(p => {
-                const isUnlimited = p.stock === -1;
                 const stockVal = p.stock;
                 
                 const div = document.createElement('div');
-                div.className = 'bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col space-y-3';
+                div.className = 'bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col space-y-3 shadow-lg relative overflow-hidden';
                 div.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <div class="text-3xl">${p.emoji}</div>
-                        <div>
-                            <h4 class="font-bold text-sm text-white">${p.name}</h4>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-16 h-16 bg-slate-900 rounded-lg flex items-center justify-center overflow-hidden shrink-0">
+                            <img src="${p.img}" class="w-full h-full object-contain">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-sm text-white truncate" title="${p.name}">${p.name}</h4>
                             <span class="text-[10px] text-gray-400 uppercase">${p.category}</span>
+                            <div class="mt-2 text-xs font-mono font-bold ${stockVal === 0 ? 'text-rose-400' : 'text-emerald-400'}">
+                                ${stockVal === 0 ? 'AGOTADO' : (stockVal === -1 ? 'ILIMITADO' : 'Disp: ' + stockVal)}
+                            </div>
                         </div>
                     </div>
                     <div class="flex items-center justify-between mt-auto pt-3 border-t border-slate-800">
-                        <span class="text-xs font-bold text-gray-300">Stock actual:</span>
-                        <div class="flex items-center space-x-2">
-                            <input type="number" min="-1" value="${stockVal}" id="stock-inp-${p.id}" class="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs text-center font-mono">
-                            <button onclick="updateStock('${p.id}', document.getElementById('stock-inp-${p.id}').value)" class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 shadow-lg shadow-blue-500/20">Guardar</button>
+                        <span class="text-xs font-bold text-gray-300">Stock:</span>
+                        <div class="flex items-center bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+                            <button onclick="changeStockVal('${p.id}', -1)" class="w-8 h-8 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-gray-300 transition font-bold">-</button>
+                            <input type="number" min="-1" value="${stockVal}" id="stock-inp-${p.id}" class="w-12 bg-transparent text-center text-white text-xs font-mono font-bold focus:outline-none focus:bg-slate-800 h-8" onchange="updateStock('${p.id}', this.value)">
+                            <button onclick="changeStockVal('${p.id}', 1)" class="w-8 h-8 flex items-center justify-center bg-slate-800 hover:bg-slate-700 text-gray-300 transition font-bold">+</button>
                         </div>
                     </div>
-                    <div class="text-[9px] text-gray-500 text-center">-1 significa ilimitado (hasta que finalice)</div>
                 `;
                 container.appendChild(div);
             });
+        }
+
+        function changeStockVal(id, delta) {
+            const inp = document.getElementById('stock-inp-' + id);
+            let val = parseInt(inp.value);
+            if (isNaN(val)) val = 0;
+            if (val === -1 && delta > 0) val = 1; // from unlimited to 1
+            else val += delta;
+            if (val < -1) val = -1;
+            inp.value = val;
+            updateStock(id, val);
         }
 
         function updateStock(id, val) {

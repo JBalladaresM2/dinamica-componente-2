@@ -35,20 +35,20 @@ system_state = {
     'lambda_param': 0.05,         
     'time_limit_x': 15.0,         
     'max_clients': 25,            
-    'frozen_count': 5,            
-    'incident_trigger_max': 12.0, # Rango para congelar / aparición de incidente (de 0.3s a incident_trigger_max)
-    'stagger_release_max': 6.0,   # Rango para descongelar y completar entrega tras incidente
+    'frozen_count': 0,            
+    'incident_trigger_max': 12.0, 
+    'stagger_release_max': 6.0,   
     'sim_start_time': None,       
     'current_phase': 1
 }
 
 # Inventario de Productos
 menu_products = [
-    { 'id': 'p1', 'emoji': '🍔', 'img': '/imgs/burguer.png', 'name': 'La Semestre-Killer', 'place': 'McMath', 'category': 'Hamburguesa con queso', 'badgeColor': 'text-blue-400', 'btnColor': 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30', 'stock': -1 }, # -1 = ilimitado
-    { 'id': 'p2', 'emoji': '🍕', 'img': '/imgs/pizza.png', 'name': 'La Integral', 'place': 'Pizza Gauss', 'category': 'Pizza de pepperoni', 'badgeColor': 'text-purple-400', 'btnColor': 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30', 'stock': -1 },
-    { 'id': 'p3', 'emoji': '🍟', 'img': '/imgs/papas.png', 'name': 'Papas Finitas', 'place': 'Estocástica Fries', 'category': 'Papas fritas crujientes', 'badgeColor': 'text-amber-400', 'btnColor': 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30', 'stock': -1 },
-    { 'id': 'p4', 'emoji': '🌭', 'img': '/imgs/hotdog.png', 'name': 'El Perro Exponencial', 'place': 'Distribución HotDogs', 'category': 'Hot dog gourmet', 'badgeColor': 'text-rose-400', 'btnColor': 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30', 'stock': -1 },
-    { 'id': 'p5', 'emoji': '🧪', 'img': '/imgs/mercurio.png', 'name': 'Por si pierdo el semestre', 'place': 'Lab. de Toxicología (Sótano 3)', 'category': '1LT de Mercurio liquido', 'badgeColor': 'text-emerald-400 animate-pulse', 'btnColor': 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30', 'stock': -1 }
+    { 'id': 'p1', 'emoji': '🍔', 'img': '/imgs/burguer.png', 'name': 'La Semestre-Killer', 'place': 'McMath', 'category': 'Hamburguesa con queso', 'badgeColor': 'text-blue-400', 'btnColor': 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/30', 'stock': 5 },
+    { 'id': 'p2', 'emoji': '🍕', 'img': '/imgs/pizza.png', 'name': 'La Integral', 'place': 'Pizza Gauss', 'category': 'Pizza de pepperoni', 'badgeColor': 'text-purple-400', 'btnColor': 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/30', 'stock': 5 },
+    { 'id': 'p3', 'emoji': '🍟', 'img': '/imgs/papas.png', 'name': 'Papas Finitas', 'place': 'Estocástica Fries', 'category': 'Papas fritas crujientes', 'badgeColor': 'text-amber-400', 'btnColor': 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30', 'stock': 5 },
+    { 'id': 'p4', 'emoji': '🌭', 'img': '/imgs/hotdog.png', 'name': 'El Perro Exponencial', 'place': 'Distribución HotDogs', 'category': 'Hot dog gourmet', 'badgeColor': 'text-rose-400', 'btnColor': 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30', 'stock': 5 },
+    { 'id': 'p5', 'emoji': '🧪', 'img': '/imgs/mercurio.png', 'name': 'Por si pierdo el semestre', 'place': 'Lab. de Toxicología (Sótano 3)', 'category': '1LT de Mercurio liquido', 'badgeColor': 'text-emerald-400 animate-pulse', 'btnColor': 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30', 'stock': 5 }
 ]
 
 # ------------------------------------------------------------------------------
@@ -630,23 +630,44 @@ def handle_admin_update_stock(data):
 @socketio.on('admin_reset_simulation')
 def handle_admin_reset_simulation():
     system_state['lobby_open'] = False
-    system_state['current_phase'] = 1
     system_state['sim_start_time'] = None
+    system_state['current_phase'] = 1
     
-    for cid, client in list(clients.items()):
-        client['product'] = None
-        client['product_name'] = None
-        client['status'] = 'lobby'
-        client['time_x'] = 0.0
-        client['start_time'] = None
-        client['is_frozen'] = False
-        client['will_have_incident'] = False
-        client['incident_trigger_time'] = None
-        client['freidora_start_time'] = None
-        client['delivered_time'] = None
-        if client.get('socket_id'):
-            socketio.emit('state_change', {'state': 'lobby', 'lobby_open': False}, room=client['socket_id'], namespace='/')
-        
+    # Restablecer valores predeterminados
+    system_state['lambda_param'] = 0.05
+    system_state['time_limit_x'] = 15.0
+    system_state['max_clients'] = 25
+    system_state['frozen_count'] = 0
+    system_state['incident_trigger_max'] = 12.0
+    system_state['stagger_release_max'] = 6.0
+
+    # Restablecer inventario
+    for p in menu_products:
+        p['stock'] = 5
+
+    socketio.emit('menu_sync', {'menu_products': menu_products}, namespace='/')
+
+    # Guardamos bots por si acaso los queremos mantener o los borramos (los borramos por si acaso)
+    bot_keys = [k for k, v in clients.items() if v.get('is_bot')]
+    for k in bot_keys:
+        del clients[k]
+
+    for cid, info in clients.items():
+        info['status'] = 'lobby'
+        info['time_x'] = 0
+        info['delivered_time'] = None
+        info['incident_info'] = None
+        info['product'] = None
+        info['product_name'] = None
+        info['start_time'] = None
+        info['is_frozen'] = False
+        info['will_have_incident'] = False
+        info['incident_trigger_time'] = None
+        info['freidora_start_time'] = None
+        if info.get('socket_id'):
+            socketio.emit('state_change', {'state': 'lobby', 'lobby_open': False}, room=info['socket_id'], namespace='/')
+    
+    socketio.emit('state_change', {'state': 'lobby', 'lobby_open': False, 'menu_products': menu_products}, namespace='/')
     broadcast_admin_update()
 
 @socketio.on('admin_clear_bots')
